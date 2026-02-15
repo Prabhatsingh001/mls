@@ -27,6 +27,10 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+LOGIN_URL = 'a:login'
+LOGOUT_REDIRECT_URL = 'a:login'
+LOGIN_REDIRECT_URL = 'a:home'
+
 
 # Application definition
 
@@ -40,7 +44,12 @@ INSTALLED_APPS = [
     'authentication',
     'services',
     'billing',
+    "tailwind",
+    "theme",
 ]
+
+if DEBUG:
+    INSTALLED_APPS += ["django_browser_reload"]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -52,12 +61,17 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+if DEBUG:
+    MIDDLEWARE += [
+        "django_browser_reload.middleware.BrowserReloadMiddleware",
+    ]
+
 ROOT_URLCONF = 'mls.urls'
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': ['templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -72,6 +86,9 @@ TEMPLATES = [
 WSGI_APPLICATION = 'mls.wsgi.application'
 
 AUTH_USER_MODEL = 'authentication.User'
+
+TAILWIND_APP_NAME = "theme"
+NPM_BIN_PATH = "C:\\Program Files\\nodejs\\npm.cmd"
 
 
 # Database

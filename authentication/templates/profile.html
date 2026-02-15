@@ -1,0 +1,70 @@
+{% extends "index.html" %}
+
+{% block title %}Profile — MLS{% endblock %}
+
+{% block content %}
+<div class="min-h-screen px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+  <div class="max-w-2xl mx-auto">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+      <div class="flex items-center gap-4">
+        <!-- Avatar -->
+        <div class="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-gray-800 flex items-center justify-center shrink-0">
+          <span class="text-xl sm:text-2xl font-bold text-white">{{ user.full_name|make_list|first|upper }}</span>
+        </div>
+        <div>
+          <h1 class="text-xl sm:text-2xl font-bold text-gray-800">{{ user.full_name }}</h1>
+          <p class="text-sm text-gray-500">{{ user.email }}</p>
+        </div>
+      </div>
+      <span class="inline-flex items-center self-start rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
+        {{ user.get_role_display }}
+      </span>
+    </div>
+
+    <!-- Info card -->
+    <div class="bg-white rounded-lg border border-gray-200 divide-y divide-gray-100">
+
+      <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+        <span class="text-sm font-medium text-gray-500">Full Name</span>
+        <span class="text-sm text-gray-800">{{ user.full_name }}</span>
+      </div>
+
+      <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+        <span class="text-sm font-medium text-gray-500">Email</span>
+        <span class="text-sm text-gray-800">{{ user.email }}</span>
+      </div>
+
+      <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+        <span class="text-sm font-medium text-gray-500">Phone</span>
+        <span class="text-sm text-gray-800">{{ user.phone_number|default:"Not provided" }}</span>
+      </div>
+
+      <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+        <span class="text-sm font-medium text-gray-500">Address</span>
+        <span class="text-sm text-gray-800">{{ user.address|default:"Not provided" }}</span>
+      </div>
+
+      <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+        <span class="text-sm font-medium text-gray-500">Member Since</span>
+        <span class="text-sm text-gray-800">{{ user.date_joined|date:"M d, Y" }}</span>
+      </div>
+
+    </div>
+
+    <!-- Actions -->
+    <div class="mt-6 flex flex-col sm:flex-row gap-3">
+      <a href="#"
+         class="rounded bg-gray-800 px-4 py-2.5 text-sm font-medium text-white text-center hover:bg-gray-700 active:bg-gray-900 transition">
+        Edit Profile
+      </a>
+      <a href="#"
+         class="rounded border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 text-center hover:bg-gray-50 transition">
+        Change Password
+      </a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

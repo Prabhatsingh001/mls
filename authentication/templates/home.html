@@ -1,0 +1,8 @@
+<h1> welcome to home page of mls </h1>
+
+{% if user.is_authenticated %}
+  <p>Welcome back, {{ user.full_name }}!</p>
+<a href="{% url "a:logout" %}"> logout </a>
+{% else %}
+  <p>You are not logged in. Please <a href="{% url "a:login" %}">login</a> to access your account.</p>
+{% endif %}
