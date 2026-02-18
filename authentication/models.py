@@ -37,7 +37,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     role = models.CharField(max_length=10, choices=Role.choices, default=Role.CUSTOMER)
     
     # Required fields for Django Admin/Auth
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=False)  # Users must verify email before becoming active
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
 

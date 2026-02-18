@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+from decouple import config
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -25,8 +26,6 @@ SECRET_KEY = 'django-insecure-_hhxj&e6xa#m0*_mi1^%!r6jt-3ej+-ubvu2^^o^th516&7elv
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
 LOGIN_URL = 'a:login'
 LOGOUT_REDIRECT_URL = 'a:login'
 LOGIN_REDIRECT_URL = 'a:home'
@@ -41,6 +40,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_celery_results',
+    'django_celery_beat',
     'authentication',
     'services',
     'billing',
@@ -90,6 +91,16 @@ AUTH_USER_MODEL = 'authentication.User'
 TAILWIND_APP_NAME = "theme"
 NPM_BIN_PATH = "C:\\Program Files\\nodejs\\npm.cmd"
 
+if DEBUG:
+    SOCIAL_AUTH_RAISE_EXCEPTIONS = True
+    SITE_DOMAIN = "127.0.0.1:8000"
+    PROTOCOL = "http"
+    ALLOWED_HOSTS = ["127.0.0.1"]
+else:
+    SITE_DOMAIN = "url-ly.onrender.com"
+    PROTOCOL = "https"
+    ALLOWED_HOSTS = config("ALLOWED_HOSTS")
+
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -100,6 +111,20 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+CELERY_BROKER_URL = "redis://:mls_redis_secret_2026@localhost:6379/0"
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_BACKEND = "django-db"
+
+EMAIL_BACKEND = config("EMAIL_BACKEND")
+EMAIL_HOST = config("EMAIL_HOST")
+EMAIL_PORT = config("EMAIL_PORT", cast=int)
+EMAIL_USE_TLS = config("EMAIL_USE_TLS", cast=bool)
+EMAIL_HOST_USER = config("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
+SUPPORT_EMAIL = config("SUPPORT_EMAIL")
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 
 # Password validation

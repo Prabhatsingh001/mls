@@ -38,12 +38,10 @@ def send_welcome_email(user_id):
 
     Both HTML and plain text versions are sent using the welcome_email.html template.
     """
-    from django.contrib.auth import get_user_model
-
-    User = get_user_model()
+    from .models import User
     user = User.objects.get(id=user_id)
     login_url = f"{settings.PROTOCOL}://{settings.SITE_DOMAIN}/a/login/"
-    subject = "Welcome to URL.LY"
+    subject = "Welcome to URL.ly!!"
     html_content = render_to_string(
         "emails/welcome_email.html",
         {
@@ -52,9 +50,8 @@ def send_welcome_email(user_id):
         },
     )
     text_content = (
-        f"Hi {user.username},\n\n"
+        f"Hi {user.full_name},\n\n"
         "Welcome to URL.ly!\n\n"
-        f"Username: {user.username}\n"
         f"Email: {user.email}\n\n"
         f"Login: {login_url}\n\n"
         "If you didn’t sign up, ignore this email.\n\n— URL.ly Team"
@@ -87,9 +84,8 @@ def send_verification_mail(user_id):
     Uses email_verification.html template and includes a time-sensitive
     verification token for secure email confirmation.
     """
-    from django.contrib.auth import get_user_model
+    from .models import User
 
-    User = get_user_model()
     user = User.objects.get(id=user_id)
     current_site = settings.SITE_DOMAIN
     protocol = settings.PROTOCOL
@@ -106,7 +102,7 @@ def send_verification_mail(user_id):
     )
 
     text_content = f"""
-        Hello {user.username},
+        Hello {user.full_name},
 
         Please confirm your email address by clicking the link below:
         {protocol}://{current_site}/a/activate/{urlsafe_base64_encode(force_bytes(user.pk))}/{account_activation_token.make_token(user)}/
@@ -147,9 +143,7 @@ def send_reset_password_email(
     Uses reset_password_email.html template and includes a time-sensitive
     reset token for secure password reset process.
     """
-    from django.contrib.auth import get_user_model
-
-    User = get_user_model()
+    from .models import User
     user = User.objects.get(id=user_id)
     subject = "Reset Password"
     uid = urlsafe_base64_encode(force_bytes(user.pk))
@@ -166,7 +160,7 @@ def send_reset_password_email(
     )
 
     text_content = f"""
-        Hello {user.username},
+        Hello {user.full_name},
         You have requested to reset your password. Please click the link below to reset it:
         {protocol}://{current_site}/a/reset-password/{uid}/{token}/
         If you did not request this, please ignore this email.
@@ -199,9 +193,7 @@ def password_reset_success_email(user_id):
 
     Uses password_reset_success_email.html template for consistent branding.
     """
-    from django.contrib.auth import get_user_model
-
-    User = get_user_model()
+    from .models import User
     user = User.objects.get(id=user_id)
     subject = "Password Reset Successfully"
     html_content = render_to_string(
@@ -213,7 +205,7 @@ def password_reset_success_email(user_id):
     )
 
     text_content = f"""
-        Hi {user.username},
+        Hi {user.full_name},
         Your password has been reset successfully. You can now log in with your new password.
         If you did not request this change, please contact support immediately.
         Thank you for using URL.LY!
@@ -226,52 +218,3 @@ def password_reset_success_email(user_id):
     )
     email.attach_alternative(html_content, "text/html")
     email.send(fail_silently=True)
-
-
-# @shared_task
-# def send_contact_email(contact_id):
-#     """
-#     Forward contact form submissions to the team email address asynchronously.
-
-#     Args:
-#         contact_id: UUID of the Contact instance to process
-
-#     The email includes:
-#         - Sender's name and email
-#         - Complete message content
-#         - Formatted notification for team review
-
-#     Uses contact_email.html template and sends to predefined team email addresses.
-#     Both HTML and plain text versions are supported for maximum compatibility.
-#     """
-#     from .models import Contact
-
-#     contact = Contact.objects.get(id=contact_id)
-#     subject = f"New Notification from {contact.email}"
-#     html_content = render_to_string(
-#         "emails/contact_email.html",
-#         {
-#             "name": contact.name,
-#             "email": contact.email,
-#             "message": contact.message,
-#         },
-#     )
-
-#     text_content = f"""
-#         you have recieved a new message
-
-#         name: {contact.name}
-#         email: {contact.email}
-
-#         message: {contact.message}
-#     """
-#     team_mail = ["ghostcoder420@gmail.com"]
-
-#     email = EmailMultiAlternatives(
-#         subject,
-#         text_content,
-#         settings.EMAIL_HOST_USER,
-#         team_mail,
-#     )
-#     email.attach_alternative(html_content, "text/html")
-#     email.send(fail_silently=True)

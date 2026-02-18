@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.contrib.sites.shortcuts import get_current_site
 from django.db import transaction
-from django.shortcuts import render,redirect
+from django.shortcuts import get_object_or_404, render,redirect
 from django.contrib.auth import (
     authenticate, 
     login as auth_login, 
@@ -10,9 +10,9 @@ from django.contrib.auth import (
 from django.contrib.auth.decorators import login_required
 from .models import User
 from .tokens import account_activation_token, password_reset_token
-from .tasks import send_reset_password_email, password_reset_success_email
-from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
-from django.utils.encoding import force_bytes, force_str
+from .tasks import send_reset_password_email, password_reset_success_email, send_verification_mail
+from django.utils.http import urlsafe_base64_decode
+from django.utils.encoding import force_str
 
 
 def home(request):
@@ -45,7 +45,9 @@ def register(request):
         user = User(email=email, full_name=full_name, role=role)
         user.set_password(password)
         user.save()
-        return redirect('a:login')
+        transaction.on_commit(lambda: send_verification_mail.delay(user.id))  # type: ignore
+        messages.success(request, 'Registration successful! Please check your email to verify your account.')
+        return redirect('a:resend-verification-email', email=email)
     return render(request, 'register.html', {'roles': allowed_roles.items()})
 
 
@@ -144,6 +146,62 @@ def reset_password(request, uidb64, token):
         return render(request, "reset_password.html", {"user": user})
     else:
         messages.error(request, "Password reset link is invalid or has expired")
+        return redirect("a:login")
+
+def resend_verification_email(request, email=None):
+    """Resend account verification email.
+
+    POST: Look up the user by email and, if the account is not active, schedule
+    a new verification email. Redirect and flash messages are used to notify
+    the user of the result.
+
+    GET: Render the resend verification page with an optional pre-filled
+    `email` parameter.
+    """
+
+    if request.method == "POST":
+        email = request.POST.get("email")
+        user = get_object_or_404(User, email=email)
+
+        if user.is_active:
+            messages.success(request, "User is already verified!")
+            return redirect("a:login")
+
+        transaction.on_commit(lambda: send_verification_mail.delay(user.id))  # type: ignore
+        messages.success(request, "Verification email has been resent!")
+        return redirect("a:resend-verification-email", email=email)
+    return render(request, "resend_verification_email.html", {"email": email})
+
+
+def activate(request, uidb64, token):
+    """Activate a user's account using a uid and token from email link.
+
+    The `uidb64` is base64-encoded user id used together with a token to
+    validate the request. On successful validation the account is activated
+    and the user is redirected to the login page with a success message.
+
+    Args:
+        request (HttpRequest): Django request.
+        uidb64 (str): Base64-encoded user id from the activation email.
+        token (str): Activation token to validate the request.
+
+    Returns:
+        HttpResponse: Redirect to login with success/error message.
+    """
+
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+
+    if user is not None and account_activation_token.check_token(user, token):
+        user.is_active = True
+        user.save()
+        messages.success(request, "Email verified successfully")
+        return redirect("a:login")
+    else:
+        messages.error(request, "Email verification failed")
         return redirect("a:login")
 
 @login_required()

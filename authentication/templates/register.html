@@ -7,12 +7,6 @@
   <div class="w-full max-w-sm sm:max-w-md">
     <h2 class="text-xl sm:text-2xl font-bold text-center text-gray-800 mb-6">Create an account</h2>
 
-    {% if error %}
-    <div class="mb-4 rounded bg-red-50 border border-red-300 text-red-700 px-4 py-3 text-sm">
-      {{ error }}
-    </div>
-    {% endif %}
-
     <!-- Google Sign-Up (placeholder — wire up with django-allauth or similar) -->
     <a href="#" class="flex items-center justify-center gap-3 w-full rounded border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
       <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24">
@@ -87,4 +81,17 @@
     </p>
   </div>
 </div>
+
+<script>
+  document.querySelector('form').addEventListener('submit', function (e) {
+    let password = document.getElementById('password').value;
+    let confirmPassword = document.getElementById('confirm_password').value;
+    if (password !== confirmPassword) {
+      e.preventDefault();
+      document.getElementById('password').value = '';
+      document.getElementById('confirm_password').value = '';
+      showToast('Passwords do not match.', 'error');
+    }
+  });
+</script>
 {% endblock %}
