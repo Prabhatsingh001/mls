@@ -1,6 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.utils import timezone
+import random
+import string
+
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -30,14 +33,22 @@ class User(AbstractBaseUser, PermissionsMixin):
         TECHNICIAN = "TECH", "Technician"
         CUSTOMER = "CUST", "Customer"
 
+    class SignupMethod(models.TextChoices):
+        EMAIL = "email", "Email"
+        PHONE = "phone", "Phone"
+
     email = models.EmailField(unique=True)
     full_name = models.CharField(max_length=255)
     phone_number = models.CharField(max_length=15, blank=True)
     address = models.TextField(blank=True)
-    role = models.CharField(max_length=10, choices=Role.choices, default=Role.CUSTOMER)
-    
+    role = models.CharField(max_length=10, choices=Role.choices, null=True, blank=True)
+    signup_method = models.CharField(
+        max_length=10, choices=SignupMethod.choices, default=SignupMethod.EMAIL
+    )
+    phone_verified = models.BooleanField(default=False)
+
     # Required fields for Django Admin/Auth
-    is_active = models.BooleanField(default=False)  # Users must verify email before becoming active
+    is_active = models.BooleanField(default=False)  # Users must verify email/phone before becoming active
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
 
@@ -48,3 +59,40 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.full_name} ({self.email})"
+
+
+class PhoneOTP(models.Model):
+    """Stores OTP codes for phone number verification."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='phone_otps')
+    otp = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    is_used = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"OTP for {self.user.phone_number} - {'Used' if self.is_used else 'Active'}"
+
+    @property
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+
+    @property
+    def is_valid(self):
+        return not self.is_used and not self.is_expired
+
+    @classmethod
+    def generate_otp(cls, user, validity_minutes=10):
+        """Generate a 6-digit OTP for the given user, invalidating any previous OTPs."""
+        # Invalidate previous OTPs
+        cls.objects.filter(user=user, is_used=False).update(is_used=True)
+
+        otp_code = ''.join(random.choices(string.digits, k=6))
+        otp = cls.objects.create(
+            user=user,
+            otp=otp_code,
+            expires_at=timezone.now() + timezone.timedelta(minutes=validity_minutes),
+        )
+        return otp

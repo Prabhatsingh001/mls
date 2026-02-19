@@ -6,19 +6,26 @@ from django.contrib.auth import (
     authenticate, 
     login as auth_login, 
     logout as auth_logout,
+    update_session_auth_hash,
 )
 from django.contrib.auth.decorators import login_required
-from .models import User
+from .models import User, PhoneOTP
 from .tokens import account_activation_token, password_reset_token
 from .tasks import send_reset_password_email, password_reset_success_email, send_verification_mail
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import force_str
+import logging
+
+logger = logging.getLogger(__name__)
 
 
+def index(request):
+    return render(request, 'main.html')
+
+
+@login_required()
 def home(request):
-    if request.user.is_authenticated:
-        return render(request, 'home.html', {'user': request.user})
-    return render(request, 'home.html', {'user': None})
+    return render(request, 'home.html', {'user': request.user})
 
 
 def register(request):
@@ -27,42 +34,114 @@ def register(request):
     allowed_roles.pop(User.Role.ADMIN, None)
 
     if request.method == 'POST':
-        email = request.POST['email']
         full_name = request.POST['full_name']
         password = request.POST['password']
         confirm_password = request.POST['confirm_password']
         role = request.POST.get('role', User.Role.CUSTOMER)
+        signup_method = request.POST.get('signup_method', 'email')
 
         if role not in allowed_roles:
             return render(request, 'register.html', {'error': 'Invalid role selected.', 'roles': allowed_roles.items()})
 
         if password != confirm_password:
             return render(request, 'register.html', {'error': 'Passwords do not match.', 'roles': allowed_roles.items()})
-        
-        if User.objects.filter(email=email).exists():
-            return render(request, 'register.html', {'error': 'Email already exists.', 'roles': allowed_roles.items()})
-        
-        user = User(email=email, full_name=full_name, role=role)
-        user.set_password(password)
-        user.save()
-        transaction.on_commit(lambda: send_verification_mail.delay(user.id))  # type: ignore
-        messages.success(request, 'Registration successful! Please check your email to verify your account.')
-        return redirect('a:resend-verification-email', email=email)
+
+        if signup_method == 'phone':
+            # --- Phone signup flow ---
+            phone = request.POST.get('phone', '').strip()
+            if not phone:
+                return render(request, 'register.html', {'error': 'Phone number is required.', 'roles': allowed_roles.items()})
+
+            if User.objects.filter(phone_number=phone).exists():
+                return render(request, 'register.html', {'error': 'Phone number already registered.', 'roles': allowed_roles.items()})
+
+            # Create user with a placeholder email (phone-based), inactive until OTP verified
+            placeholder_email = f"phone_{phone.replace('+', '').replace(' ', '')}@placeholder.local"
+            if User.objects.filter(email=placeholder_email).exists():
+                return render(request, 'register.html', {'error': 'Phone number already registered.', 'roles': allowed_roles.items()})
+
+            user = User(
+                email=placeholder_email,
+                full_name=full_name,
+                phone_number=phone,
+                role=role,
+                signup_method=User.SignupMethod.PHONE,
+            )
+            user.set_password(password)
+            user.save()
+
+            # Generate OTP
+            otp = PhoneOTP.generate_otp(user)
+            # Log OTP to console (integrate SMS provider like Twilio for production)
+            logger.info(f"[Phone OTP] OTP for {phone}: {otp.otp}")
+            print(f"\n{'='*50}")
+            print(f"  OTP for {phone}: {otp.otp}")
+            print(f"{'='*50}\n")
+
+            messages.success(request, 'Registration successful! Please enter the OTP sent to your phone.')
+            return redirect('a:verify-phone-otp', user_id=user.pk)
+
+        else:
+            # --- Email signup flow (existing) ---
+            email = request.POST.get('email', '').strip()
+            if not email:
+                return render(request, 'register.html', {'error': 'Email is required.', 'roles': allowed_roles.items()})
+
+            if User.objects.filter(email=email).exists():
+                return render(request, 'register.html', {'error': 'Email already exists.', 'roles': allowed_roles.items()})
+
+            user = User(email=email, full_name=full_name, role=role, signup_method=User.SignupMethod.EMAIL)
+            user.set_password(password)
+            user.save()
+            transaction.on_commit(lambda: send_verification_mail.delay(user.id))  # type: ignore
+            messages.success(request, 'Registration successful! Please check your email to verify your account.')
+            return redirect('a:resend-verification-email', email=email)
+
     return render(request, 'register.html', {'roles': allowed_roles.items()})
+
+@login_required()
+def choose_role(request):
+    if request.method == "POST":
+        role = request.POST.get("role")
+
+        if role in User.Role.values:
+            request.user.role = role
+            request.user.save()
+            return redirect("a:home")
+
+    return render(request, "choose_role.html")
+
 
 
 def login(request):
     if request.method == 'POST':
-        email = request.POST['email']
-        password = request.POST['password']
+        login_method = request.POST.get('login_method', 'email')
+        password = request.POST.get('password', '')
 
-        user = authenticate(request, email=email, password=password)
+        if login_method == 'phone':
+            phone = request.POST.get('phone', '').strip()
+            if not phone:
+                return render(request, 'login.html', {'error': 'Phone number is required.', 'active_tab': 'phone'})
+            try:
+                user_obj = User.objects.get(phone_number=phone)
+            except User.DoesNotExist:
+                return render(request, 'login.html', {'error': 'Invalid phone number or password.', 'active_tab': 'phone'})
+            user = authenticate(request, email=user_obj.email, password=password)
+        else:
+            email = request.POST.get('email', '').strip()
+            if not email:
+                return render(request, 'login.html', {'error': 'Email is required.', 'active_tab': 'email'})
+            user = authenticate(request, email=email, password=password)
+
         if user is not None:
             auth_login(request, user)
             return redirect('a:home')
         else:
-            return render(request, 'login.html', {'error': 'Invalid email or password.'})
-    return render(request, 'login.html')
+            return render(request, 'login.html', {
+                'error': 'Invalid credentials.',
+                'active_tab': login_method,
+            })
+    return render(request, 'login.html', {'active_tab': 'email'})
 
 def logout(request):
     if request.user.is_authenticated:
@@ -205,6 +284,148 @@ def activate(request, uidb64, token):
         return redirect("a:login")
 
 @login_required()
-def profile(request):
+def profile(request, user_id):
     return render(request, 'profile.html', {'user': request.user})
+
+@login_required()
+def edit_profile(request, user_id):
+    user = get_object_or_404(User, pk=user_id)
+
+    # Only allow users to edit their own profile
+    if request.user.pk != user.pk:
+        messages.error(request, "You can only edit your own profile.")
+        return redirect('a:profile', user_id=user.pk)
+
+    if request.method == 'POST':
+        full_name = request.POST.get('full_name', '').strip()
+        phone_number = request.POST.get('phone_number', '').strip()
+        address = request.POST.get('address', '').strip()
+
+        if full_name:
+            user.full_name = full_name
+
+        # Phone-signup users can optionally add an email
+        if user.signup_method == User.SignupMethod.PHONE:
+            new_email = request.POST.get('email', '').strip()
+            if new_email and new_email != user.email:
+                if User.objects.filter(email=new_email).exclude(pk=user.pk).exists():
+                    messages.error(request, 'That email is already in use.')
+                    return render(request, 'edit_profile.html', {'user': user})
+                user.email = new_email
+        else:
+            # Email-signup users can update their phone number
+            user.phone_number = phone_number
+
+        user.address = address
+        user.save()
+        messages.success(request, 'Profile updated successfully!')
+        return redirect('a:profile', user_id=user.pk)
+
+    return render(request, 'edit_profile.html', {'user': user})
+
+@login_required
+def update_password(request, user_id):
+    """Change a user's password while preserving the session.
+
+    POST: Validate `password` and `confirm-password`, update the user's
+    password and refresh the session auth hash so the user remains logged in.
+    A success email is scheduled after the change.
+
+    GET: Render the password update form.
+    """
+
+    user = get_object_or_404(User, id=user_id)
+    if request.user.pk != user.pk:
+        messages.error(request, "You can only change your own password.")
+        return redirect('a:profile', user_id=user.pk)
+    if request.method == "POST":
+        new_password = request.POST.get("password")
+        confirm_password = request.POST.get("confirm-password")
+
+        if new_password != confirm_password:
+            messages.error(request, "Passwords do not match")
+            return redirect("a:profile", user_id=user.pk)
+
+        user.set_password(new_password)
+        user.save()
+
+        update_session_auth_hash(request, user)
+        # send success email
+        transaction.on_commit(lambda: password_reset_success_email.delay(user.id))  # type: ignore
+        messages.success(request, "Password reset successfully")
+
+        return redirect("a:profile", user_id=user.pk)
+
+    return render(request, "profile_update_password.html", {"user": user})
+
+
+def join_as_technician(request):
+    """Static landing page encouraging technicians to sign up."""
+    return render(request, 'join_as_technician.html')
+
+
+def verify_phone_otp(request, user_id):
+    """Verify phone number using OTP after phone-based registration.
+
+    GET: Render OTP input form.
+    POST: Validate submitted OTP. On success, activate the user account
+    and redirect to login. On failure, show error and allow retry.
+    """
+    user = get_object_or_404(User, pk=user_id, signup_method=User.SignupMethod.PHONE)
+
+    if user.is_active and user.phone_verified:
+        messages.info(request, "Phone number is already verified.")
+        return redirect("a:login")
+
+    if request.method == "POST":
+        otp_input = request.POST.get("otp", "").strip()
+
+        if not otp_input:
+            messages.error(request, "Please enter the OTP.")
+            return render(request, "verify_phone_otp.html", {"user": user})
+
+        # Find the latest valid OTP for this user
+        otp_obj = PhoneOTP.objects.filter(
+            user=user, otp=otp_input, is_used=False
+        ).order_by("-created_at").first()
+
+        if otp_obj is None or not otp_obj.is_valid:
+            messages.error(request, "Invalid or expired OTP. Please try again or request a new one.")
+            return render(request, "verify_phone_otp.html", {"user": user})
+
+        # OTP is valid — activate account
+        otp_obj.is_used = True
+        otp_obj.save()
+
+        user.is_active = True
+        user.phone_verified = True
+        user.save()
+
+        messages.success(request, "Phone number verified successfully! You can now sign in.")
+        return redirect("a:login")
+
+    return render(request, "verify_phone_otp.html", {"user": user})
+
+
+def resend_phone_otp(request, user_id):
+    """Resend a new OTP to the user's phone number.
+
+    Generates a fresh OTP (invalidating any previous ones) and redirects
+    back to the OTP verification page.
+    """
+    user = get_object_or_404(User, pk=user_id, signup_method=User.SignupMethod.PHONE)
+
+    if user.is_active and user.phone_verified:
+        messages.info(request, "Phone number is already verified.")
+        return redirect("a:login")
+
+    otp = PhoneOTP.generate_otp(user)
+    # Log OTP to console (integrate SMS provider for production)
+    logger.info(f"[Phone OTP] OTP for {user.phone_number}: {otp.otp}")
+    print(f"\n{'='*50}")
+    print(f"  OTP for {user.phone_number}: {otp.otp}")
+    print(f"{'='*50}\n")
+
+    messages.success(request, "A new OTP has been sent to your phone number.")
+    return redirect("a:verify-phone-otp", user_id=user.pk)
 
