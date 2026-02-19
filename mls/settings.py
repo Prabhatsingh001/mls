@@ -21,14 +21,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-_hhxj&e6xa#m0*_mi1^%!r6jt-3ej+-ubvu2^^o^th516&7elv'
+SECRET_KEY = config("SECRET_KEY", cast=str)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 LOGIN_URL = 'a:login'
 LOGOUT_REDIRECT_URL = 'a:login'
-LOGIN_REDIRECT_URL = 'a:home'
+LOGIN_REDIRECT_URL = 'a:redirect-dashboard'
 
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = config("GOOGLE_CLIENT_ID", cast=str)
 SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = config("GOOGLE_CLIENT_SECRET", cast=str)
@@ -51,6 +51,8 @@ INSTALLED_APPS = [
     'authentication',
     'services',
     'billing',
+    'adminapp',
+    'customerapp',
     "tailwind",
     "theme",
 ]

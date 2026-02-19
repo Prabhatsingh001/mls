@@ -12,6 +12,7 @@ from django.contrib.auth.decorators import login_required
 from .models import User, PhoneOTP
 from .tokens import account_activation_token, password_reset_token
 from .tasks import send_reset_password_email, password_reset_success_email, send_verification_mail
+from .decorators import role_required
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import force_str
 import logging
@@ -23,9 +24,27 @@ def index(request):
     return render(request, 'main.html')
 
 
+@login_required
+@role_required([User.Role.TECHNICIAN])
+def tech_dashboard(request):
+    return render(request, "dashboards/tech.html")
+
+
+
+
 @login_required()
-def home(request):
-    return render(request, 'home.html', {'user': request.user})
+def redirect_dashboard(request):
+
+    if request.user.role == User.Role.ADMIN:
+        return redirect("adminapp:admin-dashboard")
+
+    elif request.user.role == User.Role.TECHNICIAN:
+        return redirect("a:tech-dashboard")
+
+    elif request.user.role == User.Role.CUSTOMER:
+        return redirect("customerapp:customer-dashboard")
+
+    return redirect("a:choose-role")
 
 
 def register(request):
@@ -107,7 +126,7 @@ def choose_role(request):
         if role in User.Role.values:
             request.user.role = role
             request.user.save()
-            return redirect("a:home")
+            return redirect("a:redirect-dashboard")
 
     return render(request, "choose_role.html")
 
@@ -135,7 +154,7 @@ def login(request):
 
         if user is not None:
             auth_login(request, user)
-            return redirect('a:home')
+            return redirect('a:redirect-dashboard')
         else:
             return render(request, 'login.html', {
                 'error': 'Invalid credentials.',
@@ -144,9 +163,9 @@ def login(request):
     return render(request, 'login.html', {'active_tab': 'email'})
 
 def logout(request):
-    if request.user.is_authenticated:
-        auth_logout(request)
-    return redirect('a:home')
+    auth_logout(request)
+    messages.success(request, "Logged out successfully.")
+    return redirect("a:login")
 
 
 def forgot_password(request):

@@ -4,7 +4,7 @@
 
       <!-- Logo / Brand -->
         {% if user.is_authenticated %}
-            <a href="{% url 'index' %}" class="text-lg sm:text-xl font-bold text-gray-800 tracking-tight">
+            <a href="{% url 'a:redirect-dashboard' %}" class="text-lg sm:text-xl font-bold text-gray-800 tracking-tight">
                 MLS
             </a>
         {% else %}
@@ -16,7 +16,7 @@
       <!-- Desktop nav links -->
       <div class="hidden md:flex items-center gap-6">
         {% if user.is_authenticated %}
-            <a href="{% url 'a:home' %}" class="text-sm text-gray-600 hover:text-gray-900 transition">Home</a>
+            <a href="{% url 'a:redirect-dashboard' %}" class="text-sm text-gray-600 hover:text-gray-900 transition">Home</a>
             <span class="text-sm text-gray-500">{{ user.full_name }}</span>
             <a href="{% url 'a:profile' user.id %}" class="text-sm text-gray-600 hover:text-gray-900 transition">Profile</a>
             <a href="{% url 'a:logout' %}" class="text-sm text-gray-600 hover:text-gray-900 transition">Logout</a>
@@ -51,7 +51,7 @@
     <div class="px-4 py-3 space-y-2">
       
       {% if user.is_authenticated %}
-        <a href="{% url 'a:home' %}" class="block rounded px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition">Home</a>
+        <a href="{% url 'a:redirect-dashboard' %}" class="block rounded px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition">Home</a>
         <span class="block px-3 py-2 text-sm text-gray-500">{{ user.full_name }}</span>
         <a href="{% url 'a:profile' user.id %}" class="block rounded px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition">Profile</a>
         <a href="{% url 'a:logout' %}" class="block rounded px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition">Logout</a>

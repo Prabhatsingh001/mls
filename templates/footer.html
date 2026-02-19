@@ -6,7 +6,11 @@
 
       <!-- Brand -->
       <div class="col-span-2 sm:col-span-3 lg:col-span-1 mb-4 lg:mb-0">
-        <a href="{% url 'a:home' %}" class="text-xl font-bold text-gray-800 tracking-tight">MLS</a>
+        {% if user.is_authenticated %}
+            <a href="{% url 'a:redirect-dashboard' %}" class="text-xl font-bold text-gray-800 tracking-tight">MLS</a>
+        {% else %}
+            <a href="{% url 'index' %}" class="text-xl font-bold text-gray-800 tracking-tight">MLS</a>
+        {% endif %}
         <p class="mt-3 text-sm text-gray-500 max-w-xs leading-relaxed">
           Reliable micro-lending services built for technicians, customers, and administrators.
         </p>
@@ -16,10 +20,14 @@
       <div>
         <h3 class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Quick Links</h3>
         <ul class="space-y-2">
-          <li><a href="{% url 'a:home' %}" class="text-sm text-gray-600 hover:text-gray-900 transition">Home</a></li>
-          <li><a href="#" class="text-sm text-gray-600 hover:text-gray-900 transition">Services</a></li>
-          <li><a href="#" class="text-sm text-gray-600 hover:text-gray-900 transition">Pricing</a></li>
-          <li><a href="#" class="text-sm text-gray-600 hover:text-gray-900 transition">About</a></li>
+            {% if user.is_authenticated %}
+                <li><a href="{% url 'a:redirect-dashboard' %}" class="text-sm text-gray-600 hover:text-gray-900 transition">Home</a></li>
+            {% else %}
+                <li><a href="{% url 'index' %}" class="text-sm text-gray-600 hover:text-gray-900 transition">Home</a></li>
+            {% endif %}
+            <li><a href="#" class="text-sm text-gray-600 hover:text-gray-900 transition">Services</a></li>
+            <li><a href="#" class="text-sm text-gray-600 hover:text-gray-900 transition">Pricing</a></li>
+            <li><a href="#" class="text-sm text-gray-600 hover:text-gray-900 transition">About</a></li>
         </ul>
       </div>
 
