@@ -129,6 +129,17 @@ DATABASES = {
     }
 }
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'mls_db',
+#         'USER': 'mls_user',
+#         'PASSWORD': 'mls_pg_secret_2026',
+#         'HOST': 'localhost',
+#         'PORT': '5432',
+#     }
+# }
+
 CELERY_BROKER_URL = "redis://:mls_redis_secret_2026@localhost:6379/0"
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
@@ -181,6 +192,9 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

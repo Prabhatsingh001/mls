@@ -9,10 +9,9 @@ from django.contrib.auth import (
     update_session_auth_hash,
 )
 from django.contrib.auth.decorators import login_required
-from .models import User, PhoneOTP
+from .models import User, PhoneOTP, TechnicianProfile, CustomerProfile, Address
 from .tokens import account_activation_token, password_reset_token
 from .tasks import send_reset_password_email, password_reset_success_email, send_verification_mail
-from .decorators import role_required
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import force_str
 import logging
@@ -21,15 +20,9 @@ logger = logging.getLogger(__name__)
 
 
 def index(request):
+    if request.user.is_authenticated:
+        return redirect("a:redirect-dashboard")
     return render(request, 'main.html')
-
-
-@login_required
-@role_required([User.Role.TECHNICIAN])
-def tech_dashboard(request):
-    return render(request, "dashboards/tech.html")
-
-
 
 
 @login_required()
@@ -39,7 +32,7 @@ def redirect_dashboard(request):
         return redirect("adminapp:admin-dashboard")
 
     elif request.user.role == User.Role.TECHNICIAN:
-        return redirect("a:tech-dashboard")
+        return redirect("services:tech-dashboard")
 
     elif request.user.role == User.Role.CUSTOMER:
         return redirect("customerapp:customer-dashboard")
@@ -304,7 +297,21 @@ def activate(request, uidb64, token):
 
 @login_required()
 def profile(request, user_id):
-    return render(request, 'profile.html', {'user': request.user})
+    if request.user.pk != user_id:
+        messages.error(request, "You can only view your own profile.")
+        return redirect('a:profile', user_id=request.user.pk)
+    user = request.user
+    context = {'user': user}
+
+    if user.role == User.Role.TECHNICIAN:
+        tech_profile, _ = TechnicianProfile.objects.get_or_create(user=user)
+        context['tech_profile'] = tech_profile
+    elif user.role == User.Role.CUSTOMER:
+        cust_profile, _ = CustomerProfile.objects.get_or_create(user=user)
+        context['cust_profile'] = cust_profile
+        context['addresses'] = cust_profile.addresses.all() #type: ignore
+
+    return render(request, 'profile.html', context)
 
 @login_required()
 def edit_profile(request, user_id):
@@ -315,10 +322,19 @@ def edit_profile(request, user_id):
         messages.error(request, "You can only edit your own profile.")
         return redirect('a:profile', user_id=user.pk)
 
+    tech_profile = None
+    cust_profile = None
+    addresses = []
+
+    if user.role == User.Role.TECHNICIAN:
+        tech_profile, _ = TechnicianProfile.objects.get_or_create(user=user)
+    elif user.role == User.Role.CUSTOMER:
+        cust_profile, _ = CustomerProfile.objects.get_or_create(user=user)
+        addresses = cust_profile.addresses.all() #type: ignore
+
     if request.method == 'POST':
         full_name = request.POST.get('full_name', '').strip()
         phone_number = request.POST.get('phone_number', '').strip()
-        address = request.POST.get('address', '').strip()
 
         if full_name:
             user.full_name = full_name
@@ -329,18 +345,62 @@ def edit_profile(request, user_id):
             if new_email and new_email != user.email:
                 if User.objects.filter(email=new_email).exclude(pk=user.pk).exists():
                     messages.error(request, 'That email is already in use.')
-                    return render(request, 'edit_profile.html', {'user': user})
+                    return render(request, 'edit_profile.html', {
+                        'user': user, 'tech_profile': tech_profile,
+                        'cust_profile': cust_profile, 'addresses': addresses,
+                    })
                 user.email = new_email
         else:
-            # Email-signup users can update their phone number
             user.phone_number = phone_number
 
-        user.address = address
         user.save()
+
+        # Technician-specific fields
+        if user.role == User.Role.TECHNICIAN and tech_profile:
+            tech_profile.address = request.POST.get('address', '').strip()
+            tech_profile.experience_years = int(request.POST.get('experience_years', 0) or 0)
+            skills_raw = request.POST.get('skills', '').strip()
+            tech_profile.skills = [s.strip() for s in skills_raw.split(',') if s.strip()] if skills_raw else []
+
+            if 'profile_picture' in request.FILES:
+                tech_profile.profile_picture = request.FILES['profile_picture']
+            if 'aadhar_image' in request.FILES:
+                tech_profile.aadhar_image = request.FILES['aadhar_image']
+
+            tech_profile.save()
+
+        # Customer address
+        if user.role == User.Role.CUSTOMER and cust_profile:
+            street = request.POST.get('street', '').strip()
+            city = request.POST.get('city', '').strip()
+            state = request.POST.get('state', '').strip()
+            postal_code = request.POST.get('postal_code', '').strip()
+            country = request.POST.get('country', '').strip()
+
+            if street or city:
+                primary_addr = cust_profile.addresses.filter(is_primary=True).first() #type: ignore
+                if primary_addr:
+                    primary_addr.street = street
+                    primary_addr.city = city
+                    primary_addr.state = state
+                    primary_addr.postal_code = postal_code
+                    primary_addr.country = country
+                    primary_addr.save()
+                else:
+                    Address.objects.create(
+                        customer=cust_profile,
+                        street=street, city=city, state=state,
+                        postal_code=postal_code, country=country,
+                        is_primary=True,
+                    )
+
         messages.success(request, 'Profile updated successfully!')
         return redirect('a:profile', user_id=user.pk)
 
-    return render(request, 'edit_profile.html', {'user': user})
+    return render(request, 'edit_profile.html', {
+        'user': user, 'tech_profile': tech_profile,
+        'cust_profile': cust_profile, 'addresses': addresses,
+    })
 
 @login_required
 def update_password(request, user_id):
@@ -376,11 +436,6 @@ def update_password(request, user_id):
         return redirect("a:profile", user_id=user.pk)
 
     return render(request, "profile_update_password.html", {"user": user})
-
-
-def join_as_technician(request):
-    """Static landing page encouraging technicians to sign up."""
-    return render(request, 'join_as_technician.html')
 
 
 def verify_phone_otp(request, user_id):

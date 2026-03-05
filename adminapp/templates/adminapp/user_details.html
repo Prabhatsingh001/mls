@@ -1,0 +1,323 @@
+{% extends "index.html" %}
+
+{% block title %}{{ target_user.full_name }} — Admin — MLS{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl min-h-screen mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+
+  <!-- Back link -->
+  <div class="mb-6">
+    <a href="{% url 'adminapp:admin-dashboard' %}?tab={% if target_user.role == 'TECH' %}technicians{% else %}users{% endif %}"
+       class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition">
+      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/>
+      </svg>
+      Back to Dashboard
+    </a>
+  </div>
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+    <div class="flex items-center gap-4">
+      {% if tech_profile and tech_profile.profile_picture %}
+        <img src="{{ tech_profile.profile_picture.url }}" alt="Profile"
+             class="h-14 w-14 sm:h-16 sm:w-16 rounded-full object-cover shrink-0">
+      {% else %}
+        <div class="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-gray-800 flex items-center justify-center shrink-0">
+          <span class="text-xl sm:text-2xl font-bold text-white">{{ target_user.full_name|make_list|first|upper }}</span>
+        </div>
+      {% endif %}
+      <div>
+        <h1 class="text-xl sm:text-2xl font-bold text-gray-800">{{ target_user.full_name }}</h1>
+        <p class="text-sm text-gray-500">{{ target_user.email }}</p>
+      </div>
+    </div>
+    <div class="flex flex-wrap items-center gap-2 self-start">
+      <!-- Role badge -->
+      <span class="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
+        {{ target_user.get_role_display }}
+      </span>
+      <!-- Active/Inactive badge -->
+      {% if target_user.is_active %}
+        <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+          <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span> Active
+        </span>
+      {% else %}
+        <span class="inline-flex items-center gap-1 rounded-full bg-red-50 border border-red-200 px-2.5 py-0.5 text-xs font-medium text-red-700">
+          <span class="h-1.5 w-1.5 rounded-full bg-red-500"></span> Inactive
+        </span>
+      {% endif %}
+      <!-- Technician verification badge -->
+      {% if tech_profile %}
+        {% if tech_profile.verification_status == 'verified' %}
+          <span class="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
+            <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
+            Verified
+          </span>
+        {% elif tech_profile.verification_status == 'pending' %}
+          <span class="inline-flex items-center rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-700">Pending Verification</span>
+        {% elif tech_profile.verification_status == 'rejected' %}
+          <span class="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700">Rejected</span>
+        {% elif tech_profile.verification_status == 'blacklisted' %}
+          <span class="inline-flex items-center rounded-full bg-gray-800 px-3 py-1 text-xs font-medium text-white">Blacklisted</span>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ===== BASIC INFO ===== -->
+  <h2 class="text-base font-semibold text-gray-800 mb-3">Account Information</h2>
+  <div class="bg-white rounded-lg border border-gray-200 divide-y divide-gray-100 mb-8">
+    <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+      <span class="text-sm font-medium text-gray-500">Full Name</span>
+      <span class="text-sm text-gray-800">{{ target_user.full_name }}</span>
+    </div>
+    <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+      <span class="text-sm font-medium text-gray-500">Email</span>
+      <span class="text-sm text-gray-800">{{ target_user.email }}</span>
+    </div>
+    <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+      <span class="text-sm font-medium text-gray-500">Phone</span>
+      <span class="text-sm text-gray-800">{{ target_user.phone_number|default:"Not provided" }}</span>
+    </div>
+    <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+      <span class="text-sm font-medium text-gray-500">Signup Method</span>
+      <span class="text-sm text-gray-800">{{ target_user.get_signup_method_display }}</span>
+    </div>
+    <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+      <span class="text-sm font-medium text-gray-500">Member Since</span>
+      <span class="text-sm text-gray-800">{{ target_user.date_joined|date:"M d, Y" }}</span>
+    </div>
+  </div>
+
+  <!-- ===== TECHNICIAN PROFILE ===== -->
+  {% if tech_profile %}
+  <h2 class="text-base font-semibold text-gray-800 mb-3">Technician Profile</h2>
+  <div class="bg-white rounded-lg border border-gray-200 divide-y divide-gray-100 mb-8">
+    <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+      <span class="text-sm font-medium text-gray-500">Skills</span>
+      <div class="flex flex-wrap gap-1.5">
+        {% for skill in tech_profile.skills %}
+          <span class="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">{{ skill }}</span>
+        {% empty %}
+          <span class="text-sm text-gray-400">Not provided</span>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+      <span class="text-sm font-medium text-gray-500">Experience</span>
+      <span class="text-sm text-gray-800">
+        {% if tech_profile.experience_years %}
+          {{ tech_profile.experience_years }} year{{ tech_profile.experience_years|pluralize }}
+        {% else %}
+          Not provided
+        {% endif %}
+      </span>
+    </div>
+    <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+      <span class="text-sm font-medium text-gray-500">Address</span>
+      <span class="text-sm text-gray-800">{{ tech_profile.address|default:"Not provided" }}</span>
+    </div>
+    <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+      <span class="text-sm font-medium text-gray-500">Profile Picture</span>
+      {% if tech_profile.profile_picture %}
+        <a href="{{ tech_profile.profile_picture.url }}" target="_blank">
+          <img src="{{ tech_profile.profile_picture.url }}" alt="Profile picture" class="h-16 w-16 rounded-lg object-cover border border-gray-200">
+        </a>
+      {% else %}
+        <span class="text-sm text-gray-400">Not uploaded</span>
+      {% endif %}
+    </div>
+    <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+      <span class="text-sm font-medium text-gray-500">Aadhar Document</span>
+      {% if tech_profile.aadhar_image %}
+        <a href="{{ tech_profile.aadhar_image.url }}" target="_blank">
+          <img src="{{ tech_profile.aadhar_image.url }}" alt="Aadhar document" class="h-24 rounded-lg object-cover border border-gray-200">
+        </a>
+      {% else %}
+        <span class="text-sm text-gray-400">Not uploaded</span>
+      {% endif %}
+    </div>
+    <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+      <span class="text-sm font-medium text-gray-500">Verification Status</span>
+      <span class="text-sm font-medium
+        {% if tech_profile.verification_status == 'verified' %}text-green-700
+        {% elif tech_profile.verification_status == 'pending' %}text-yellow-700
+        {% elif tech_profile.verification_status == 'rejected' %}text-red-700
+        {% elif tech_profile.verification_status == 'blacklisted' %}text-gray-800
+        {% endif %}">
+        {{ tech_profile.get_verification_status_display }}
+      </span>
+    </div>
+  </div>
+
+  <!-- ===== VERIFICATION ACTIONS ===== -->
+  <h2 class="text-base font-semibold text-gray-800 mb-3">Verification Actions</h2>
+  <div class="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 mb-8">
+    <p class="text-sm text-gray-500 mb-4">
+      Current status: <strong class="text-gray-800">{{ tech_profile.get_verification_status_display }}</strong>.
+      Choose an action below to change this technician's verification status.
+    </p>
+    <div class="flex flex-wrap gap-3">
+      {% if tech_profile.verification_status != 'verified' %}
+      <form method="post" action="{% url 'adminapp:admin-update-tech-status' user_id=target_user.pk %}"
+            onsubmit="return confirm('Approve {{ target_user.full_name }} as a verified technician?')">
+        {% csrf_token %}
+        <input type="hidden" name="status" value="verified">
+        <button type="submit"
+                class="rounded px-4 py-2 text-sm font-medium bg-green-600 text-white hover:bg-green-700 active:bg-green-800 transition">
+          <span class="inline-flex items-center gap-1.5">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
+            Approve
+          </span>
+        </button>
+      </form>
+      {% endif %}
+
+      {% if tech_profile.verification_status != 'rejected' %}
+      <form method="post" action="{% url 'adminapp:admin-update-tech-status' user_id=target_user.pk %}"
+            onsubmit="return confirm('Reject {{ target_user.full_name }}?')">
+        {% csrf_token %}
+        <input type="hidden" name="status" value="rejected">
+        <button type="submit"
+                class="rounded px-4 py-2 text-sm font-medium bg-red-600 text-white hover:bg-red-700 active:bg-red-800 transition">
+          <span class="inline-flex items-center gap-1.5">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+            Reject
+          </span>
+        </button>
+      </form>
+      {% endif %}
+
+      {% if tech_profile.verification_status != 'blacklisted' %}
+      <form method="post" action="{% url 'adminapp:admin-update-tech-status' user_id=target_user.pk %}"
+            onsubmit="return confirm('Blacklist {{ target_user.full_name }}? This will mark them as permanently blocked.')">
+        {% csrf_token %}
+        <input type="hidden" name="status" value="blacklisted">
+        <button type="submit"
+                class="rounded px-4 py-2 text-sm font-medium bg-gray-800 text-white hover:bg-gray-900 transition">
+          <span class="inline-flex items-center gap-1.5">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+            Blacklist
+          </span>
+        </button>
+      </form>
+      {% endif %}
+
+      {% if tech_profile.verification_status != 'pending' %}
+      <form method="post" action="{% url 'adminapp:admin-update-tech-status' user_id=target_user.pk %}"
+            onsubmit="return confirm('Reset {{ target_user.full_name }} back to Pending?')">
+        {% csrf_token %}
+        <input type="hidden" name="status" value="pending">
+        <button type="submit"
+                class="rounded px-4 py-2 text-sm font-medium bg-yellow-500 text-white hover:bg-yellow-600 transition">
+          <span class="inline-flex items-center gap-1.5">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182"/></svg>
+            Reset to Pending
+          </span>
+        </button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ===== ASSIGNED PROJECTS ===== -->
+  {% if assigned_projects is not None %}
+  <h2 class="text-base font-semibold text-gray-800 mb-3">
+    Assigned Projects
+    <span class="text-sm font-normal text-gray-400 ml-1">({{ assigned_projects|length }})</span>
+  </h2>
+  {% if assigned_projects %}
+  <div class="space-y-3 mb-8">
+    {% for project in assigned_projects %}
+    <div class="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-sm transition">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-1">
+            <h3 class="text-sm font-semibold text-gray-800 truncate">PRJ-{{ project.pk }}: {{ project.source_request.service.title }}</h3>
+            {% if project.status == 'PENDING' %}
+              <span class="inline-flex items-center rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700">Pending</span>
+            {% elif project.status == 'SCHED' %}
+              <span class="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">Scheduled</span>
+            {% elif project.status == 'ONGOING' %}
+              <span class="inline-flex items-center rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700">In Progress</span>
+            {% elif project.status == 'COMPLETED' %}
+              <span class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">Completed</span>
+            {% elif project.status == 'CANCELLED' %}
+              <span class="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">Cancelled</span>
+            {% endif %}
+          </div>
+          <p class="text-xs text-gray-500">Customer: {{ project.source_request.customer.full_name }}</p>
+          <p class="text-xs text-gray-500">Category: {{ project.source_request.service.category.name }}</p>
+        </div>
+        <div class="text-right shrink-0">
+          <p class="text-sm font-medium text-gray-800">${{ project.quoted_amount }}</p>
+          {% if project.start_date %}
+            <p class="text-xs text-gray-500">Start: {{ project.start_date|date:"M d, Y" }}</p>
+          {% endif %}
+          {% if project.completion_date %}
+            <p class="text-xs text-gray-500">Done: {{ project.completion_date|date:"M d, Y" }}</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="rounded-lg border border-gray-200 bg-white p-6 text-center mb-8">
+    <p class="text-sm text-gray-500">No projects assigned to this technician yet.</p>
+  </div>
+  {% endif %}
+  {% endif %}
+  {% endif %}
+
+  <!-- ===== CUSTOMER PROFILE ===== -->
+  {% if cust_profile %}
+  <h2 class="text-base font-semibold text-gray-800 mb-3">Customer Addresses</h2>
+  <div class="bg-white rounded-lg border border-gray-200 divide-y divide-gray-100 mb-8">
+    {% for addr in addresses %}
+    <div class="px-4 sm:px-6 py-4">
+      <div class="flex items-center gap-2 mb-1">
+        {% if addr.is_primary %}
+          <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">Primary</span>
+        {% endif %}
+      </div>
+      <p class="text-sm text-gray-800">{{ addr.street }}</p>
+      <p class="text-sm text-gray-600">{{ addr.city }}, {{ addr.state }} {{ addr.postal_code }}</p>
+      <p class="text-sm text-gray-600">{{ addr.country }}</p>
+    </div>
+    {% empty %}
+    <div class="px-4 sm:px-6 py-4">
+      <span class="text-sm text-gray-400">No addresses added yet.</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- ===== QUICK ADMIN ACTIONS ===== -->
+  <h2 class="text-base font-semibold text-gray-800 mb-3">Account Actions</h2>
+  <div class="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+    <div class="flex flex-wrap gap-3">
+      <form method="post" action="{% url 'adminapp:admin-toggle-active' user_id=target_user.pk %}">
+        {% csrf_token %}
+        <button type="submit"
+                class="rounded px-4 py-2 text-sm font-medium transition
+                {% if target_user.is_active %}bg-red-50 text-red-700 border border-red-200 hover:bg-red-100{% else %}bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100{% endif %}">
+          {% if target_user.is_active %}Deactivate Account{% else %}Activate Account{% endif %}
+        </button>
+      </form>
+      {% if target_user.role != 'ADMIN' %}
+      <form method="post" action="{% url 'adminapp:admin-make-admin' user_id=target_user.pk %}"
+            onsubmit="return confirm('Promote {{ target_user.full_name }} to Admin?')">
+        {% csrf_token %}
+        <button type="submit"
+                class="rounded px-4 py-2 text-sm font-medium bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition">
+          Promote to Admin
+        </button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

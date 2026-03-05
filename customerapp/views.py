@@ -7,7 +7,7 @@ from authentication.models import User
 from services.models import Category, Service, JobRequest, Project
 
 
-@login_required
+@login_required()
 @role_required([User.Role.CUSTOMER])
 def customer_dashboard(request):
     """Main customer dashboard with tabs: services, my-requests, my-projects."""
@@ -41,7 +41,7 @@ def customer_dashboard(request):
     return render(request, "customerapp/customer.html", context)
 
 
-@login_required
+@login_required()
 @role_required([User.Role.CUSTOMER])
 def customer_create_request(request):
     """Create a new job request."""
@@ -68,10 +68,10 @@ def customer_create_request(request):
     )
 
     messages.success(request, f"Job request for '{service.title}' submitted successfully!")
-    return redirect("customerapp:customer-dashboard?tab=my-requests")
+    return redirect("customerapp:customer-dashboard")
 
 
-@login_required
+@login_required()
 @role_required([User.Role.CUSTOMER])
 def customer_cancel_request(request, request_id):
     """Cancel a job request that hasn't been converted to a project yet."""
@@ -86,4 +86,4 @@ def customer_cancel_request(request, request_id):
         job_request.delete()
         messages.success(request, "Job request cancelled successfully.")
 
-    return redirect("customerapp:customer-dashboard?tab=my-requests")
+    return redirect("customerapp:customer-dashboard")

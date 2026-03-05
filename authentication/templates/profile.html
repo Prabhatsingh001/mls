@@ -9,21 +9,44 @@
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
       <div class="flex items-center gap-4">
-        <!-- Avatar -->
-        <div class="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-gray-800 flex items-center justify-center shrink-0">
-          <span class="text-xl sm:text-2xl font-bold text-white">{{ user.full_name|make_list|first|upper }}</span>
-        </div>
+        <!-- Avatar / Profile Picture -->
+        {% if tech_profile and tech_profile.profile_picture %}
+          <img src="{{ tech_profile.profile_picture.url }}" alt="Profile"
+               class="h-14 w-14 sm:h-16 sm:w-16 rounded-full object-cover shrink-0">
+        {% else %}
+          <div class="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-gray-800 flex items-center justify-center shrink-0">
+            <span class="text-xl sm:text-2xl font-bold text-white">{{ user.full_name|make_list|first|upper }}</span>
+          </div>
+        {% endif %}
         <div>
           <h1 class="text-xl sm:text-2xl font-bold text-gray-800">{{ user.full_name }}</h1>
           <p class="text-sm text-gray-500">{{ user.email }}</p>
         </div>
       </div>
-      <span class="inline-flex items-center self-start rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
-        {{ user.get_role_display }}
-      </span>
+      <div class="flex items-center gap-2 self-start">
+        <span class="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
+          {{ user.get_role_display }}
+        </span>
+        {% if tech_profile %}
+          {% if tech_profile.verification_status == 'verified' %}
+            <span class="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
+              <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
+              Verified
+            </span>
+          {% elif tech_profile.verification_status == 'pending' %}
+            <span class="inline-flex items-center rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-700">
+              Pending Verification
+            </span>
+          {% elif tech_profile.verification_status == 'rejected' %}
+            <span class="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700">
+              Rejected
+            </span>
+          {% endif %}
+        {% endif %}
+      </div>
     </div>
 
-    <!-- Info card -->
+    <!-- Basic Info card -->
     <div class="bg-white rounded-lg border border-gray-200 divide-y divide-gray-100">
 
       <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
@@ -42,16 +65,78 @@
       </div>
 
       <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-        <span class="text-sm font-medium text-gray-500">Address</span>
-        <span class="text-sm text-gray-800">{{ user.address|default:"Not provided" }}</span>
-      </div>
-
-      <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
         <span class="text-sm font-medium text-gray-500">Member Since</span>
         <span class="text-sm text-gray-800">{{ user.date_joined|date:"M d, Y" }}</span>
       </div>
 
     </div>
+
+    <!-- Technician-specific info -->
+    {% if tech_profile %}
+    <h2 class="text-lg font-semibold text-gray-800 mt-8 mb-3">Technician Details</h2>
+    <div class="bg-white rounded-lg border border-gray-200 divide-y divide-gray-100">
+
+      <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+        <span class="text-sm font-medium text-gray-500">Skills</span>
+        <div class="flex flex-wrap gap-1.5">
+          {% for skill in tech_profile.skills %}
+            <span class="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">{{ skill }}</span>
+          {% empty %}
+            <span class="text-sm text-gray-400">Not provided</span>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+        <span class="text-sm font-medium text-gray-500">Experience</span>
+        <span class="text-sm text-gray-800">
+          {% if tech_profile.experience_years %}
+            {{ tech_profile.experience_years }} year{{ tech_profile.experience_years|pluralize }}
+          {% else %}
+            Not provided
+          {% endif %}
+        </span>
+      </div>
+
+      <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+        <span class="text-sm font-medium text-gray-500">Address</span>
+        <span class="text-sm text-gray-800">{{ tech_profile.address|default:"Not provided" }}</span>
+      </div>
+
+      <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+        <span class="text-sm font-medium text-gray-500">Aadhar Document</span>
+        {% if tech_profile.aadhar_image %}
+          <a href="{{ tech_profile.aadhar_image.url }}" target="_blank" class="text-sm text-blue-600 hover:underline">View Document</a>
+        {% else %}
+          <span class="text-sm text-gray-400">Not uploaded</span>
+        {% endif %}
+      </div>
+
+    </div>
+    {% endif %}
+
+    <!-- Customer-specific info -->
+    {% if cust_profile %}
+    <h2 class="text-lg font-semibold text-gray-800 mt-8 mb-3">Address</h2>
+    <div class="bg-white rounded-lg border border-gray-200 divide-y divide-gray-100">
+      {% for addr in addresses %}
+        <div class="px-4 sm:px-6 py-4">
+          <div class="flex items-center gap-2 mb-1">
+            {% if addr.is_primary %}
+              <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">Primary</span>
+            {% endif %}
+          </div>
+          <p class="text-sm text-gray-800">{{ addr.street }}</p>
+          <p class="text-sm text-gray-600">{{ addr.city }}, {{ addr.state }} {{ addr.postal_code }}</p>
+          <p class="text-sm text-gray-600">{{ addr.country }}</p>
+        </div>
+      {% empty %}
+        <div class="px-4 sm:px-6 py-4">
+          <span class="text-sm text-gray-400">No address added yet</span>
+        </div>
+      {% endfor %}
+    </div>
+    {% endif %}
 
     <!-- Actions -->
     <div class="mt-6 flex flex-col sm:flex-row gap-3">

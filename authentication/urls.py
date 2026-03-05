@@ -3,7 +3,6 @@ from . import views
 
 urlpatterns = [
     path('redirect-dashboard/', views.redirect_dashboard, name='redirect-dashboard'),
-    path('technician-dashboard/', views.tech_dashboard, name='tech-dashboard'),
 
     path('register/', views.register, name='register'),
     path("activate/<uidb64>/<token>/", views.activate, name="activate"),
@@ -18,5 +17,4 @@ urlpatterns = [
     path('edit-profile/<int:user_id>/', views.edit_profile, name='edit_profile'),
     path('update-password/<int:user_id>/', views.update_password, name='update_password'),
     path('choose-role/', views.choose_role, name='choose-role'),
-    path('join-as-technician/', views.join_as_technician, name='join_as_technician'),
 ]

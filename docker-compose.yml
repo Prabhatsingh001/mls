@@ -9,5 +9,19 @@ services:
     volumes:
       - redis_data:/data
 
+  postgres:
+    image: postgres:16-alpine
+    container_name: mls_postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: mls_db
+      POSTGRES_USER: mls_user
+      POSTGRES_PASSWORD: mls_pg_secret_2026
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
 volumes:
   redis_data:
+  postgres_data:

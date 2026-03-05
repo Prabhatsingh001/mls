@@ -22,7 +22,7 @@
             <a href="{% url 'a:logout' %}" class="text-sm text-gray-600 hover:text-gray-900 transition">Logout</a>
         {% else %}
             <a href="{% url 'index' %}" class="text-sm text-gray-600 hover:text-gray-900 transition">Home</a>
-          <a href="{% url 'a:join_as_technician' %}" class="text-sm text-gray-600 hover:text-gray-900 transition">Become a Technician</a>
+          <a href="{% url 'services:join_as_technician' %}" class="text-sm text-gray-600 hover:text-gray-900 transition">Become a Technician</a>
           <a href="{% url 'a:login' %}" class="text-sm text-gray-600 hover:text-gray-900 transition">Sign in</a>
           <a href="{% url 'a:register' %}" class="rounded bg-gray-800 px-4 py-1.5 text-sm font-medium text-white hover:bg-gray-700 transition">
             Register
@@ -57,7 +57,7 @@
         <a href="{% url 'a:logout' %}" class="block rounded px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition">Logout</a>
       {% else %}
         <a href="{% url 'index' %}" class="block rounded px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition">Home</a>
-        <a href="{% url 'a:join_as_technician' %}" class="block rounded px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition">Become a Technician</a>
+        <a href="{% url 'services:join_as_technician' %}" class="block rounded px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition">Become a Technician</a>
         <a href="{% url 'a:login' %}" class="block rounded px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition">Sign in</a>
         <a href="{% url 'a:register' %}" class="block rounded bg-gray-800 px-3 py-2 text-sm font-medium text-center text-white hover:bg-gray-700 transition">Register</a>
       {% endif %}

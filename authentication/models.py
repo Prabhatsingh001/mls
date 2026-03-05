@@ -18,6 +18,8 @@ class UserManager(BaseUserManager):
     def create_superuser(self, email, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_active', True)
+        extra_fields.setdefault('phone_verified', True)
         extra_fields.setdefault('role', 'ADMIN')
 
         if extra_fields.get('is_staff') is not True:
@@ -40,7 +42,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     full_name = models.CharField(max_length=255)
     phone_number = models.CharField(max_length=15, blank=True)
-    address = models.TextField(blank=True)
     role = models.CharField(max_length=10, choices=Role.choices, null=True, blank=True)
     signup_method = models.CharField(
         max_length=10, choices=SignupMethod.choices, default=SignupMethod.EMAIL
@@ -59,6 +60,47 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.full_name} ({self.email})"
+    
+
+class TechnicianProfile(models.Model):
+    class VerificationStatus(models.TextChoices):
+        PENDING = "pending", "Pending"
+        VERIFIED = "verified", "Verified"
+        REJECTED = "rejected", "Rejected"
+        BLACKLISTED = "blacklisted", "Blacklisted"
+
+    """Profile model for technicians, linked to the User model."""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='technician_profile')
+    skills = models.JSONField(default=list)  # List of skills/areas of expertise
+    experience_years = models.PositiveIntegerField(default=0)
+    address = models.CharField(max_length=255, blank=True)
+    profile_picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True)
+    aadhar_image = models.ImageField(upload_to='aadhar_images/', null=True, blank=True)
+    verification_status = models.CharField(max_length=20, default=VerificationStatus.PENDING)  # pending, verified, rejected
+
+    def get_verification_status_display(self):
+        return self.VerificationStatus(self.verification_status).label
+
+    def __str__(self):
+        return f"Technician Profile for {self.user.full_name}"
+    
+
+class CustomerProfile(models.Model):
+    """Profile model for customers, linked to the User model."""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='customer_profile')
+
+    def __str__(self):
+        return f"Customer Profile for {self.user.full_name}"
+    
+
+class Address(models.Model):
+    customer = models.ForeignKey(CustomerProfile, on_delete=models.CASCADE, related_name='addresses')
+    street = models.CharField(max_length=255)
+    city = models.CharField(max_length=100)
+    state = models.CharField(max_length=100)
+    postal_code = models.CharField(max_length=20)
+    country = models.CharField(max_length=100)
+    is_primary = models.BooleanField(default=False)
 
 
 class PhoneOTP(models.Model):

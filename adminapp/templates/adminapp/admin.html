@@ -48,6 +48,11 @@
          {% if tab == 'services' %}border-gray-800 text-gray-800{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}">
         Services
       </a>
+      <a href="?tab=requests"
+            class="pb-3 text-sm font-medium border-b-2 transition
+            {% if tab == 'requests' %}border-gray-800 text-gray-800{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}">
+            Requests
+        </a>
       <a href="?tab=users"
          class="pb-3 text-sm font-medium border-b-2 transition
          {% if tab == 'users' %}border-gray-800 text-gray-800{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}">
@@ -77,7 +82,9 @@
         <tbody class="divide-y divide-gray-100">
           {% for tech in technicians %}
           <tr class="hover:bg-gray-50 transition">
-            <td class="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">{{ tech.full_name }}</td>
+            <td class="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">
+              <a href="{% url 'adminapp:admin-user-details' user_id=tech.pk %}" class="hover:underline text-blue-700">{{ tech.full_name }}</a>
+            </td>
             <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ tech.email }}</td>
             <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ tech.phone_number|default:"—" }}</td>
             <td class="px-4 py-3 text-gray-500 whitespace-nowrap">{{ tech.date_joined|date:"M d, Y" }}</td>
@@ -246,6 +253,63 @@
     </div>
     {% endif %}
   </div>
+
+  {% elif tab == "requests" %}
+    <div>
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">Recent Service Requests</h2>
+    
+        {% if requests %}
+        <div class="overflow-x-auto rounded-lg border border-gray-200">
+          <table class="min-w-full divide-y divide-gray-200 bg-white text-sm">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requested On</th>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              {% for req in requests %}
+              <tr class="hover:bg-gray-50 transition">
+                <td class="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">{{ req.customer.full_name }}</td>
+                <td class="px-4 py-3 whitespace-nowrap">{{ req.service.title }}</td>
+                <td class="px-4 py-3 text-gray-500 whitespace-nowrap">{{ req.created_at|date:"M d, Y H:i" }}</td>
+                <td class="px-4 py-3 text-center whitespace-nowrap">
+                  {% if req.is_reviewed %}
+                    <span class="inline-flex items-center gap-1 rounded-full bg-green-50 border border-green-200 px-2.5 py-0.5 text-xs font-medium text-green-700">
+                      <span class="h-1.5 w-1.5 rounded-full bg-green-500"></span> Reviewed
+                    </span>
+                  {% elif req.is_converted_to_project %}
+                    <span class="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                      <span class="h-1.5 w-1.5 rounded-full bg-blue-500"></span> Converted to Project
+                    </span>
+                  {% comment %} {% elif req.status == "COMPLETED" %}
+                    <span class="inline-flex items-center gap-1 rounded-full bg-green-50 border border-green-200 px-2.5 py-0.5 text-xs font-medium text-green-700">
+                      <span class="h-1.5 w-1.5 rounded-full bg-green-500"></span> Completed
+                    </span>
+                  {% elif req.status == "CANCELLED" %}
+                    <span class="inline-flex items-center gap-1 rounded-full bg-red-50 border border-red-200 px-2.5 py-0.5 text-xs font-medium text-red-700">
+                      <span class="h-1.5 w-1.5 rounded-full bg-red-500"></span> Cancelled
+                    </span> {% endcomment %}
+                  {% else %}
+                    <span class="inline-flex items-center gap-1 rounded-full bg-gray-50 border border-gray-200 px-2.5 py-0.5 text-xs font-medium text-gray-700">
+                      <span class="h-1.5 w-1.5 rounded-full bg-gray-500"></span> Unknown
+                    </span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="rounded-lg border border-gray-200 bg-white p-8 text-center">
+          <p class="text-sm text-gray-500">No service requests have been made yet.</p>
+        </div>
+        {% endif %}
+    </div>
+
 
   <!-- ===== USERS TAB ===== -->
   {% elif tab == "users" %}

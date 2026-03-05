@@ -18,9 +18,14 @@
 
     <!-- Avatar -->
     <div class="flex items-center gap-4 mb-8">
-      <div class="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-gray-800 flex items-center justify-center shrink-0">
-        <span class="text-xl sm:text-2xl font-bold text-white">{{ user.full_name|make_list|first|upper }}</span>
-      </div>
+      {% if tech_profile and tech_profile.profile_picture %}
+        <img src="{{ tech_profile.profile_picture.url }}" alt="Profile"
+             class="h-14 w-14 sm:h-16 sm:w-16 rounded-full object-cover shrink-0">
+      {% else %}
+        <div class="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-gray-800 flex items-center justify-center shrink-0">
+          <span class="text-xl sm:text-2xl font-bold text-white">{{ user.full_name|make_list|first|upper }}</span>
+        </div>
+      {% endif %}
       <div>
         <p class="text-sm font-medium text-gray-800">{{ user.full_name }}</p>
         <p class="text-xs text-gray-500">{{ user.get_role_display }}</p>
@@ -28,7 +33,7 @@
     </div>
 
     <!-- Edit Form -->
-    <form method="post" class="space-y-5">
+    <form method="post" enctype="multipart/form-data" class="space-y-5">
       {% csrf_token %}
 
       <!-- Full Name -->
@@ -40,7 +45,7 @@
                placeholder="John Doe">
       </div>
 
-      <!-- Email (read-only for email-signup users, informational for phone-signup users) -->
+      <!-- Email -->
       <div>
         <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
         {% if user.signup_method == 'phone' %}
@@ -81,13 +86,116 @@
         {% endif %}
       </div>
 
+      <!-- ========== TECHNICIAN FIELDS ========== -->
+      {% if tech_profile %}
+      <hr class="border-gray-200">
+      <h2 class="text-base font-semibold text-gray-800">Technician Details</h2>
+
+      <!-- Skills -->
+      <div>
+        <label for="skills" class="block text-sm font-medium text-gray-700 mb-1">Skills</label>
+        <input type="text" name="skills" id="skills"
+               value="{{ tech_profile.skills|join:', ' }}"
+               class="w-full rounded border border-gray-300 px-3 py-2 sm:py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+               placeholder="e.g. Plumbing, Electrical, HVAC">
+        <p class="mt-1 text-xs text-gray-400">Separate skills with commas.</p>
+      </div>
+
+      <!-- Experience -->
+      <div>
+        <label for="experience_years" class="block text-sm font-medium text-gray-700 mb-1">Years of Experience</label>
+        <input type="number" name="experience_years" id="experience_years" min="0"
+               value="{{ tech_profile.experience_years }}"
+               class="w-full rounded border border-gray-300 px-3 py-2 sm:py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+               placeholder="0">
+      </div>
+
       <!-- Address -->
       <div>
         <label for="address" class="block text-sm font-medium text-gray-700 mb-1">Address</label>
         <textarea name="address" id="address" rows="3"
                   class="w-full rounded border border-gray-300 px-3 py-2 sm:py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent resize-none"
-                  placeholder="Your address">{{ user.address }}</textarea>
+                  placeholder="Your address">{{ tech_profile.address }}</textarea>
       </div>
+
+      <!-- Profile Picture -->
+      <div>
+        <label for="profile_picture" class="block text-sm font-medium text-gray-700 mb-1">Profile Picture</label>
+        {% if tech_profile.profile_picture %}
+          <div class="mb-2 flex items-center gap-3">
+            <img src="{{ tech_profile.profile_picture.url }}" alt="Current photo" class="h-12 w-12 rounded-full object-cover">
+            <span class="text-xs text-gray-500">Current photo</span>
+          </div>
+        {% endif %}
+        <input type="file" name="profile_picture" id="profile_picture" accept="image/*"
+               class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200">
+      </div>
+
+      <!-- Aadhar Document -->
+      <div>
+        <label for="aadhar_image" class="block text-sm font-medium text-gray-700 mb-1">Aadhar Document</label>
+        {% if tech_profile.aadhar_image %}
+          <div class="mb-2">
+            <a href="{{ tech_profile.aadhar_image.url }}" target="_blank" class="text-xs text-blue-600 hover:underline">View current document</a>
+          </div>
+        {% endif %}
+        <input type="file" name="aadhar_image" id="aadhar_image" accept="image/*"
+               class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200">
+      </div>
+      {% endif %}
+
+      <!-- ========== CUSTOMER FIELDS ========== -->
+      {% if cust_profile %}
+      <hr class="border-gray-200">
+      <h2 class="text-base font-semibold text-gray-800">Primary Address</h2>
+
+      {% with primary=addresses|first %}
+      <!-- Street -->
+      <div>
+        <label for="street" class="block text-sm font-medium text-gray-700 mb-1">Street</label>
+        <input type="text" name="street" id="street"
+               value="{% if primary %}{{ primary.street }}{% endif %}"
+               class="w-full rounded border border-gray-300 px-3 py-2 sm:py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+               placeholder="123 Main Street">
+      </div>
+
+      <!-- City & State -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label for="city" class="block text-sm font-medium text-gray-700 mb-1">City</label>
+          <input type="text" name="city" id="city"
+                 value="{% if primary %}{{ primary.city }}{% endif %}"
+                 class="w-full rounded border border-gray-300 px-3 py-2 sm:py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+                 placeholder="City">
+        </div>
+        <div>
+          <label for="state" class="block text-sm font-medium text-gray-700 mb-1">State</label>
+          <input type="text" name="state" id="state"
+                 value="{% if primary %}{{ primary.state }}{% endif %}"
+                 class="w-full rounded border border-gray-300 px-3 py-2 sm:py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+                 placeholder="State">
+        </div>
+      </div>
+
+      <!-- Postal Code & Country -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label for="postal_code" class="block text-sm font-medium text-gray-700 mb-1">Postal Code</label>
+          <input type="text" name="postal_code" id="postal_code"
+                 value="{% if primary %}{{ primary.postal_code }}{% endif %}"
+                 class="w-full rounded border border-gray-300 px-3 py-2 sm:py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+                 placeholder="123456">
+        </div>
+        <div>
+          <label for="country" class="block text-sm font-medium text-gray-700 mb-1">Country</label>
+          <input type="text" name="country" id="country"
+                 value="{% if primary %}{{ primary.country }}{% endif %}"
+                 class="w-full rounded border border-gray-300 px-3 py-2 sm:py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+                 placeholder="India">
+        </div>
+      </div>
+      {% endwith %}
+      {% endif %}
 
       <!-- Buttons -->
       <div class="flex flex-col sm:flex-row gap-3 pt-2">

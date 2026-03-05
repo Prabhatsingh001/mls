@@ -17,6 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path,include
 from django.conf import settings
+from django.conf.urls.static import static
 from authentication.views import index
 
 urlpatterns = [
@@ -25,6 +26,7 @@ urlpatterns = [
     path('a/', include(('authentication.urls', 'authentication'), namespace='a')),
     path('panel/', include(('adminapp.urls', 'adminapp'), namespace='adminapp')),
     path('customer/', include(('customerapp.urls', 'customerapp'), namespace='customerapp')),
+    path('services/', include(('services.urls', 'services'), namespace='services')),
     path('auth/', include('social_django.urls', namespace='social')),
 ]
 
@@ -32,3 +34,4 @@ if settings.DEBUG:
     urlpatterns += [
         path("__reload__/", include("django_browser_reload.urls")),
     ]
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
