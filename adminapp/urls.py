@@ -1,13 +1,60 @@
 from django.urls import path
+
 from . import views
 
 urlpatterns = [
-    path('dashboard/', views.admin_dashboard, name='admin-dashboard'),
-    path('toggle-active/<int:user_id>/', views.admin_toggle_user_active, name='admin-toggle-active'),
-    path('make-admin/<int:user_id>/', views.admin_make_admin, name='admin-make-admin'),
-    path('create-service/', views.admin_create_service, name='admin-create-service'),
-    path('delete-service/<int:service_id>/', views.admin_delete_service, name='admin-delete-service'),
-    path('toggle-service/<int:service_id>/', views.admin_toggle_service, name='admin-toggle-service'),
-    path('user/<int:user_id>/', views.get_user_details, name='admin-user-details'),
-    path('update-tech-status/<int:user_id>/', views.admin_update_tech_status, name='admin-update-tech-status'),
+    path("dashboard/", views.admin_dashboard, name="admin-dashboard"),
+    path(
+        "toggle-active/<int:user_id>/",
+        views.admin_toggle_user_active,
+        name="admin-toggle-active",
+    ),
+    path("make-admin/<int:user_id>/", views.admin_make_admin, name="admin-make-admin"),
+    path("create-service/", views.admin_create_service, name="admin-create-service"),
+    path(
+        "delete-service/<int:service_id>/",
+        views.admin_delete_service,
+        name="admin-delete-service",
+    ),
+    path(
+        "toggle-service/<int:service_id>/",
+        views.admin_toggle_service,
+        name="admin-toggle-service",
+    ),
+    path("user/<int:user_id>/", views.get_user_details, name="admin-user-details"),
+    path(
+        "update-tech-status/<int:user_id>/",
+        views.admin_update_tech_status,
+        name="admin-update-tech-status",
+    ),
+    path(
+        "request/<int:job_request_id>/",
+        views.admin_get_requested_service_details,
+        name="admin-review-details",
+    ),
+    path(
+        "request/<int:job_request_id>/mark-reviewed/",
+        views.admin_mark_request_reviewed,
+        name="admin-mark-reviewed",
+    ),
+    path(
+        "request/<int:job_request_id>/assign-technician/",
+        views.admin_assign_technician,
+        name="admin-assign-technician",
+    ),
+    path(
+        "request/<int:job_request_id>/convert-to-project/",
+        views.admin_convert_to_project,
+        name="admin-convert-to-project",
+    ),
+    path(
+        "project/<int:project_id>/update-status/",
+        views.admin_update_project_status,
+        name="admin-update-project-status",
+    ),
+    path(
+        "project/<int:project_id>/update-start-date/",
+        views.admin_update_project_start_date,
+        name="admin-update-project-start-date",
+    ),
 ]

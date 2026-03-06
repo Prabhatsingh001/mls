@@ -1,16 +1,17 @@
+import logging
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 
 from authentication.decorators import role_required
-from authentication.models import TechnicianProfile, CustomerProfile, Address, User
-from services.models import Category, Service, Project
-from django.core.paginator import Paginator
-from django.db.models import Count, Q
-
-import logging
+from authentication.models import CustomerProfile, TechnicianProfile, User
+from services.models import Category, JobRequest, Project, Service
 
 logger = logging.getLogger(__name__)
+
 
 @login_required()
 @role_required([User.Role.ADMIN])
@@ -25,19 +26,23 @@ def admin_dashboard(request):
     stats = User.objects.aggregate(
         total_users=Count("id"),
         total_admins=Count("id", filter=Q(role=User.Role.ADMIN)),
-        active_technicians=Count("id", filter=Q(role=User.Role.TECHNICIAN, is_active=True)),
-        inactive_technicians=Count("id", filter=Q(role=User.Role.TECHNICIAN, is_active=False)),
+        active_technicians=Count(
+            "id", filter=Q(role=User.Role.TECHNICIAN, is_active=True)
+        ),
+        inactive_technicians=Count(
+            "id", filter=Q(role=User.Role.TECHNICIAN, is_active=False)
+        ),
     )
 
     stats["total_services"] = Service.objects.count()
+    stats["total_jobs"] = Project.objects.count()
 
     context["stats"] = stats
 
     # 🔹 Load only selected tab data
     if tab == "technicians":
         technicians_qs = (
-            User.objects
-            .filter(role=User.Role.TECHNICIAN)
+            User.objects.filter(role=User.Role.TECHNICIAN)
             .only("id", "full_name", "email", "is_active", "date_joined")
             .order_by("-date_joined")
         )
@@ -47,8 +52,7 @@ def admin_dashboard(request):
 
     elif tab == "services":
         services_qs = (
-            Service.objects
-            .select_related("category")
+            Service.objects.select_related("category")
             .only("id", "title", "category__name")
             .order_by("category__name", "title")
         )
@@ -59,31 +63,48 @@ def admin_dashboard(request):
         context["categories"] = Category.objects.only("id", "name").order_by("name")
 
     elif tab == "users":
-        users_qs = (
-            User.objects
-            .only("id", "full_name", "email", "role", "is_active", "date_joined")
-            .order_by("-date_joined")
-        )
+        users_qs = User.objects.only(
+            "id", "full_name", "email", "role", "is_active", "date_joined"
+        ).order_by("-date_joined")
 
         paginator = Paginator(users_qs, 10)
         context["users"] = paginator.get_page(page_number)
 
     elif tab == "requests":
         from services.models import JobRequest
+
         requests_qs = (
-            JobRequest.objects
-            .select_related("customer", "service__category")
+            JobRequest.objects.select_related("customer", "service__category")
             .only(
-                "id", "customer__full_name", "service__title", "service__category__name",
-                "is_reviewed", "is_converted_to_project", "created_at"
+                "id",
+                "customer__full_name",
+                "service__title",
+                "service__category__name",
+                "is_reviewed",
+                "is_converted_to_project",
+                "created_at",
             )
+            .filter(is_converted_to_project=False)
             .order_by("-created_at")
         )
         paginator = Paginator(requests_qs, 10)
         context["requests"] = paginator.get_page(page_number)
 
-    return render(request, "adminapp/admin.html", context)
+    elif tab == "jobs":
+        status_filter = request.GET.get("status", "")
+        jobs_qs = Project.objects.select_related(
+            "job_request__customer",
+            "job_request__service__category",
+            "technician",
+        ).order_by("-job_request__created_at")
+        if status_filter and status_filter in Project.Status.values:
+            jobs_qs = jobs_qs.filter(status=status_filter)
+        paginator = Paginator(jobs_qs, 10)
+        context["jobs"] = paginator.get_page(page_number)
+        context["job_statuses"] = Project.Status.choices
+        context["current_status"] = status_filter
 
+    return render(request, "adminapp/admin.html", context)
 
 
 @login_required()
@@ -98,8 +119,12 @@ def admin_toggle_user_active(request, user_id):
             target.is_active = not target.is_active
             target.save()
             status = "activated" if target.is_active else "deactivated"
-            messages.success(request, f"{target.full_name}'s account has been {status}.")
-    return redirect(request.META.get("HTTP_REFERER", "")) or redirect("adminapp:admin-dashboard")
+            messages.success(
+                request, f"{target.full_name}'s account has been {status}."
+            )
+    return redirect(request.META.get("HTTP_REFERER", "")) or redirect(
+        "adminapp:admin-dashboard"
+    )
 
 
 @login_required()
@@ -115,7 +140,9 @@ def admin_make_admin(request, user_id):
             target.is_staff = True
             target.save()
             messages.success(request, f"{target.full_name} has been promoted to Admin.")
-    return redirect(request.META.get("HTTP_REFERER", "")) or redirect("adminapp:admin-dashboard")
+    return redirect(request.META.get("HTTP_REFERER", "")) or redirect(
+        "adminapp:admin-dashboard"
+    )
 
 
 @login_required()
@@ -136,6 +163,7 @@ def admin_create_service(request):
         # Resolve category
         if new_category:
             from django.utils.text import slugify
+
             slug = slugify(new_category)
             category, _ = Category.objects.get_or_create(
                 slug=slug, defaults={"name": new_category}
@@ -193,6 +221,7 @@ def admin_edit_service(request, service_id):
         # Resolve category
         if new_category:
             from django.utils.text import slugify
+
             slug = slugify(new_category)
             category, _ = Category.objects.get_or_create(
                 slug=slug, defaults={"name": new_category}
@@ -234,9 +263,13 @@ def admin_toggle_service(request, service_id):
 def get_service_requests(request, service_id):
     """View all requests for a specific service."""
     service = get_object_or_404(Service, pk=service_id)
-    requests_qs = service.requests.select_related("customer").only( # type: ignore
-        "id", "customer__full_name", "status", "created_at"
-    ).order_by("-created_at")
+    requests_qs = (
+        service.job_requests.select_related("customer")  # type: ignore
+        .only(  # type: ignore
+            "id", "customer__full_name", "status", "created_at"
+        )
+        .order_by("-created_at")
+    )
 
     paginator = Paginator(requests_qs, 10)
     page_number = request.GET.get("page")
@@ -259,15 +292,15 @@ def get_user_details(request, user_id):
         context["tech_profile"] = tech_profile
         context["assigned_projects"] = (
             Project.objects.filter(technician=target_user)
-            .select_related("source_request__service__category", "source_request__customer")
-            .order_by("-source_request__created_at")
+            .select_related("job_request__service__category", "job_request__customer")
+            .order_by("-job_request__created_at")
         )
 
     if target_user.role == User.Role.CUSTOMER:
         cust_profile = CustomerProfile.objects.filter(user=target_user).first()
         context["cust_profile"] = cust_profile
         if cust_profile:
-            context["addresses"] = cust_profile.addresses.all() #type:ignore
+            context["addresses"] = cust_profile.addresses.all()  # type:ignore
 
     return render(request, "adminapp/user_details.html", context)
 
@@ -293,3 +326,165 @@ def admin_update_tech_status(request, user_id):
     return redirect("adminapp:admin-user-details", user_id=user_id)
 
 
+@login_required()
+@role_required([User.Role.ADMIN])
+def admin_get_requested_service_details(request, job_request_id):
+    """View details of a specific job request for review."""
+    job_request = get_object_or_404(
+        JobRequest.objects.select_related("customer", "service__category"),
+        pk=job_request_id,
+    )
+    technicians = (
+        User.objects.filter(
+            role=User.Role.TECHNICIAN,
+            is_active=True,
+            technicianprofile__verification_status=TechnicianProfile.VerificationStatus.VERIFIED,
+        )
+        .only("id", "full_name")
+        .order_by("full_name")
+    )
+    # Check if already converted to a project
+    project = Project.objects.filter(job_request=job_request).first()
+    context = {
+        "job_request": job_request,
+        "technicians": technicians,
+        "project": project,
+    }
+    return render(request, "adminapp/review_details.html", context)
+
+
+@login_required()
+@role_required([User.Role.ADMIN])
+def admin_mark_request_reviewed(request, job_request_id):
+    """Mark a job request as reviewed."""
+    if request.method == "POST":
+        job_request = get_object_or_404(JobRequest, pk=job_request_id)
+        job_request.is_reviewed = True
+        job_request.save(update_fields=["is_reviewed"])
+        messages.success(request, f"Request #{job_request.pk} marked as reviewed.")
+    return redirect("adminapp:admin-review-details", job_request_id=job_request_id)
+
+
+@login_required()
+@role_required([User.Role.ADMIN])
+def admin_assign_technician(request, job_request_id):
+    """Assign a technician to an existing project for this job request."""
+    if request.method == "POST":
+        job_request = get_object_or_404(JobRequest, pk=job_request_id)
+        project = get_object_or_404(Project, job_request=job_request)
+        technician_id = request.POST.get("technician_id", "")
+        if technician_id:
+            technician = get_object_or_404(
+                User,
+                pk=technician_id,
+                role=User.Role.TECHNICIAN,
+                is_active=True,
+                technicianprofile__verification_status=TechnicianProfile.VerificationStatus.VERIFIED,
+            )
+            project.technician = technician
+            project.save(update_fields=["technician"])
+            messages.success(
+                request,
+                f"{technician.full_name} assigned to PRJ-{project.pk}.",
+            )
+        else:
+            messages.error(request, "Please select a technician.")
+    return redirect("adminapp:admin-review-details", job_request_id=job_request_id)
+
+
+@login_required()
+@role_required([User.Role.ADMIN])
+def admin_convert_to_project(request, job_request_id):
+    """Convert a reviewed job request into a project."""
+    if request.method == "POST":
+        job_request = get_object_or_404(JobRequest, pk=job_request_id)
+        if hasattr(job_request, "project"):
+            messages.info(
+                request, "This request has already been converted to a project."
+            )
+            return redirect(
+                "adminapp:admin-review-details", job_request_id=job_request_id
+            )
+
+        quoted_amount = request.POST.get("quoted_amount", "").strip()
+        technician_id = request.POST.get("technician_id", "")
+        start_date = request.POST.get("start_date", "").strip()
+        notes = request.POST.get("notes", "").strip()
+
+        if not quoted_amount:
+            quoted_amount = job_request.service.base_price
+
+        technician = None
+        if technician_id:
+            technician = get_object_or_404(
+                User,
+                pk=technician_id,
+                role=User.Role.TECHNICIAN,
+                is_active=True,
+                technicianprofile__verification_status=TechnicianProfile.VerificationStatus.VERIFIED,
+            )
+
+        if start_date:
+            status = Project.Status.SCHEDULED
+        else:
+            status = Project.Status.PENDING
+
+        Project.objects.create(
+            job_request=job_request,
+            technician=technician,
+            quoted_amount=quoted_amount,
+            status=status,
+            notes=notes,
+            start_date=start_date,
+        )
+        job_request.is_converted_to_project = True
+        job_request.save(update_fields=["is_converted_to_project"])
+        messages.success(request, f"Request #{job_request.pk} converted to a project.")
+    return redirect("adminapp:admin-review-details", job_request_id=job_request_id)
+
+
+@login_required()
+@role_required([User.Role.ADMIN])
+def admin_update_project_status(request, project_id):
+    """Update the status of an existing project."""
+    # job_request_id = request.GET.get("job_request_id", "")
+    if request.method == "POST":
+        project = get_object_or_404(Project, pk=project_id)
+        new_status = request.POST.get("status", "")
+        valid_statuses = [c[0] for c in Project.Status.choices]
+        if new_status in valid_statuses:
+            project.status = new_status
+            project.save(update_fields=["status"])
+            messages.success(
+                request,
+                f"Project PRJ-{project.pk} status updated to {project.get_status_display()}.",
+            )
+        else:
+            messages.error(request, "Invalid project status.")
+    return redirect(
+        "adminapp:admin-review-details",
+        job_request_id=project.job_request.pk,  # type: ignore
+    )
+
+
+@login_required()
+@role_required([User.Role.ADMIN])
+def admin_update_project_start_date(request, project_id):
+    """Update the start date of an existing project."""
+    if request.method == "POST":
+        project = get_object_or_404(Project, pk=project_id)
+        start_date = request.POST.get("start_date", "").strip()
+        if start_date:
+            project.start_date = start_date
+            project.status = Project.Status.SCHEDULED
+            project.save(update_fields=["start_date", "status"])
+            messages.success(
+                request,
+                f"Project PRJ-{project.pk} start date updated to {project.start_date}.",
+            )
+        else:
+            messages.error(request, "Invalid start date.")
+    return redirect(
+        "adminapp:admin-review-details",
+        job_request_id=project.job_request.pk,  # type: ignore
+    )

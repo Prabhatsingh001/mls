@@ -1,0 +1,25 @@
+<div class="border-b border-gray-200 mb-6">
+    <nav class="flex gap-6 -mb-px" aria-label="Tabs">
+        <a href="?tab=services"
+            class="pb-3 text-sm font-medium border-b-2 transition
+            {% if tab == 'services' %}border-gray-800 text-gray-800
+            {% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300
+            {% endif %}">
+            Browse Services
+        </a>
+        <a href="?tab=my-requests"
+            class="pb-3 text-sm font-medium border-b-2 transition
+            {% if tab == 'my-requests' %}border-gray-800 text-gray-800
+            {% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300
+            {% endif %}">
+            My Requests
+        </a>
+        <a href="?tab=my-projects"
+            class="pb-3 text-sm font-medium border-b-2 transition
+            {% if tab == 'my-projects' %}border-gray-800 text-gray-800
+            {% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300
+            {% endif %}">
+            My Projects
+        </a>
+    </nav>
+</div>

@@ -1,0 +1,67 @@
+<div>
+    <h2 class="text-lg font-semibold text-gray-800 mb-4">All Technicians</h2>
+
+    {% if technicians %}
+    <div class="overflow-x-auto rounded-lg border border-gray-200">
+        <table class="min-w-full divide-y divide-gray-200 bg-white text-sm">
+        <thead class="bg-gray-50">
+            <tr>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
+            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+            {% for tech in technicians %}
+            <tr class="hover:bg-gray-50 transition">
+            <td class="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">
+                <a href="{% url 'adminapp:admin-user-details' user_id=tech.pk %}" class="hover:underline text-blue-700">{{ tech.full_name }}</a>
+            </td>
+            <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ tech.email }}</td>
+            <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ tech.phone_number|default:"—" }}</td>
+            <td class="px-4 py-3 text-gray-500 whitespace-nowrap">{{ tech.date_joined|date:"M d, Y" }}</td>
+            <td class="px-4 py-3 text-center whitespace-nowrap">
+                {% if tech.is_active %}
+                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span> Active
+                </span>
+                {% else %}
+                <span class="inline-flex items-center gap-1 rounded-full bg-red-50 border border-red-200 px-2.5 py-0.5 text-xs font-medium text-red-700">
+                    <span class="h-1.5 w-1.5 rounded-full bg-red-500"></span> Inactive
+                </span>
+                {% endif %}
+            </td>
+            <td class="px-4 py-3 text-center whitespace-nowrap">
+                <div class="flex items-center justify-center gap-2">
+                <form method="post" action="{% url 'adminapp:admin-toggle-active' user_id=tech.pk %}">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="rounded px-3 py-1.5 text-xs font-medium transition
+                            {% if tech.is_active %}bg-red-50 text-red-700 border border-red-200 hover:bg-red-100{% else %}bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100{% endif %}">
+                    {% if tech.is_active %}Deactivate{% else %}Activate{% endif %}
+                    </button>
+                </form>
+                <form method="post" action="{% url 'adminapp:admin-make-admin' user_id=tech.pk %}"
+                        onsubmit="return confirm('Promote {{ tech.full_name }} to Admin?')">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="rounded px-3 py-1.5 text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition">
+                    Make Admin
+                    </button>
+                </form>
+                </div>
+            </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="rounded-lg border border-gray-200 bg-white p-8 text-center">
+        <p class="text-sm text-gray-500">No technicians have signed up yet.</p>
+    </div>
+    {% endif %}
+</div>

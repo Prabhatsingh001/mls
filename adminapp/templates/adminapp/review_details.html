@@ -1,0 +1,242 @@
+{% extends "index.html" %}
+
+{% block title %}Review Request #{{ job_request.pk }} — MLS Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl min-h-screen mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+
+  <!-- Back link -->
+  <a href="{% url 'adminapp:admin-dashboard' %}?tab=requests"
+     class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6 transition">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+    Back to Requests
+  </a>
+
+  <!-- Page Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">Request #{{ job_request.pk }}</h1>
+      <p class="mt-1 text-sm text-gray-500">{{ job_request.service.category.name }} &mdash; {{ job_request.service.title }}</p>
+    </div>
+
+    <!-- Status Badge -->
+    <div>
+      {% if job_request.is_converted_to_project %}
+        <span class="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-3 py-1 text-sm font-medium text-blue-700">
+          <span class="h-2 w-2 rounded-full bg-blue-500"></span> Converted to Project
+        </span>
+      {% elif job_request.is_reviewed %}
+        <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-sm font-medium text-emerald-700">
+          <span class="h-2 w-2 rounded-full bg-emerald-500"></span> Reviewed
+        </span>
+      {% else %}
+        <span class="inline-flex items-center gap-1 rounded-full bg-yellow-50 border border-yellow-200 px-3 py-1 text-sm font-medium text-yellow-700">
+          <span class="h-2 w-2 rounded-full bg-yellow-500"></span> Pending Review
+        </span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Request Details Card -->
+  <div class="rounded-lg border border-gray-200 bg-white p-6 mb-6">
+    <h2 class="text-lg font-semibold text-gray-800 mb-4">Request Details</h2>
+    <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
+      <div>
+        <dt class="font-medium text-gray-500">Customer</dt>
+        <dd class="mt-1 text-gray-800">{{ job_request.customer.full_name }}</dd>
+      </div>
+      <div>
+        <dt class="font-medium text-gray-500">Email</dt>
+        <dd class="mt-1 text-gray-800">{{ job_request.customer.email }}</dd>
+      </div>
+      <div>
+        <dt class="font-medium text-gray-500">Service</dt>
+        <dd class="mt-1 text-gray-800">{{ job_request.service.title }}</dd>
+      </div>
+      <div>
+        <dt class="font-medium text-gray-500">Category</dt>
+        <dd class="mt-1 text-gray-800">{{ job_request.service.category.name }}</dd>
+      </div>
+      <div>
+        <dt class="font-medium text-gray-500">Base Price</dt>
+        <dd class="mt-1 text-gray-800">${{ job_request.service.base_price }}</dd>
+      </div>
+      <div>
+        <dt class="font-medium text-gray-500">Preferred Date</dt>
+        <dd class="mt-1 text-gray-800">{{ job_request.preferred_date|date:"M d, Y" }}</dd>
+      </div>
+      <div>
+        <dt class="font-medium text-gray-500">Requested On</dt>
+        <dd class="mt-1 text-gray-800">{{ job_request.created_at|date:"M d, Y H:i" }}</dd>
+      </div>
+      <div>
+        <dt class="font-medium text-gray-500">Site Address</dt>
+        <dd class="mt-1 text-gray-800">{{ job_request.site_address }}</dd>
+      </div>
+      <div class="sm:col-span-2">
+        <dt class="font-medium text-gray-500">Description</dt>
+        <dd class="mt-1 text-gray-800 whitespace-pre-line">{{ job_request.description }}</dd>
+      </div>
+    </dl>
+  </div>
+
+  <!-- Action Buttons -->
+  {% if not job_request.is_converted_to_project %}
+
+    <!-- Step 1: Mark as Reviewed -->
+    {% if not job_request.is_reviewed %}
+    <div class="rounded-lg border border-gray-200 bg-white p-6 mb-6">
+      <h2 class="text-lg font-semibold text-gray-800 mb-2">Step 1: Review this Request</h2>
+      <p class="text-sm text-gray-500 mb-4">Mark the request as reviewed after you've gone through the details.</p>
+      <form method="post" action="{% url 'adminapp:admin-mark-reviewed' job_request_id=job_request.pk %}">
+        {% csrf_token %}
+        <button type="submit"
+                class="rounded bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-700 active:bg-emerald-800 transition">
+          Mark as Reviewed
+        </button>
+      </form>
+    </div>
+    {% endif %}
+
+    <!-- Step 2: Convert to Project -->
+    {% if job_request.is_reviewed %}
+    <div class="rounded-lg border border-gray-200 bg-white p-6 mb-6">
+      <h2 class="text-lg font-semibold text-gray-800 mb-2">Step 2: Convert to Project</h2>
+      <p class="text-sm text-gray-500 mb-4">Create a project from this request. You can optionally assign a technician now.</p>
+      <form method="post" action="{% url 'adminapp:admin-convert-to-project' job_request_id=job_request.pk %}">
+        {% csrf_token %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label for="quoted_amount" class="block text-xs font-medium text-gray-600 mb-1">Quoted Amount ($) <span class="text-red-500">*</span></label>
+            <input type="number" step="0.01" min="0" id="quoted_amount" name="quoted_amount" required
+                   placeholder="{{ job_request.service.base_price }}" value="{{ job_request.service.base_price }}"
+                   class="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500">
+          </div>
+          <div>
+            <label for="technician_id" class="block text-xs font-medium text-gray-600 mb-1">Assign Technician</label>
+            <select id="technician_id" name="technician_id"
+                    class="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500">
+              <option value="">— Assign later —</option>
+              {% for tech in technicians %}
+              <option value="{{ tech.pk }}">{{ tech.full_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label for="start_date" class="block text-xs font-medium text-gray-600 mb-1">Start Date</label>
+            <input type="date" id="start_date" name="start_date" value="{{ job_request.preferred_date|date:'Y-m-d' }}"
+                   class="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500">
+          </div>
+          <div class="sm:col-span-2">
+            <label for="notes" class="block text-xs font-medium text-gray-600 mb-1">Internal Notes</label>
+            <textarea id="notes" name="notes" rows="2" placeholder="Notes for the technician…"
+                      class="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500 resize-none"></textarea>
+          </div>
+        </div>
+        <button type="submit"
+                class="rounded bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700 active:bg-blue-800 transition">
+          Convert to Project
+        </button>
+      </form>
+    </div>
+    {% endif %}
+
+  {% else %}
+
+    <!-- Already a Project — show project info & assign technician -->
+    <div class="rounded-lg border border-gray-200 bg-white p-6 mb-6">
+      <h2 class="text-lg font-semibold text-gray-800 mb-4">Project Details — PRJ-{{ project.pk }}</h2>
+      <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm mb-6">
+        <div>
+          <dt class="font-medium text-gray-500">Status</dt>
+          <dd class="mt-1">
+            {% if project.status == 'PENDING' %}
+              <span class="inline-flex items-center gap-1 rounded-full bg-yellow-50 border border-yellow-200 px-2.5 py-0.5 text-xs font-medium text-yellow-700">Pending</span>
+            {% elif project.status == 'SCHED' %}
+              <span class="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 text-xs font-medium text-blue-700">Scheduled</span>
+            {% elif project.status == 'ONGOING' %}
+              <span class="inline-flex items-center gap-1 rounded-full bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 text-xs font-medium text-indigo-700">In Progress</span>
+            {% elif project.status == 'COMPLETED' %}
+              <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-medium text-emerald-700">Completed</span>
+            {% elif project.status == 'CANCELLED' %}
+              <span class="inline-flex items-center gap-1 rounded-full bg-red-50 border border-red-200 px-2.5 py-0.5 text-xs font-medium text-red-700">Cancelled</span>
+            {% endif %}
+          </dd>
+        </div>
+        <div>
+          <dt class="font-medium text-gray-500">Quoted Amount</dt>
+          <dd class="mt-1 text-gray-800">${{ project.quoted_amount }}</dd>
+        </div>
+        <div>
+          <dt class="font-medium text-gray-500">Technician</dt>
+          <dd class="mt-1 text-gray-800">{{ project.technician.full_name|default:"Unassigned" }}</dd>
+        </div>
+        <div>
+          <dt class="font-medium text-gray-500">Start Date</dt>
+          <dd class="mt-1 text-gray-800">{{ project.start_date|date:"Y-m-d"|default:"—" }}</dd>
+        </div>
+        {% if project.notes %}
+        <div class="sm:col-span-2">
+          <dt class="font-medium text-gray-500">Notes</dt>
+          <dd class="mt-1 text-gray-800 whitespace-pre-line">{{ project.notes }}</dd>
+        </div>
+        {% endif %}
+      </dl>
+
+      <div class="border-t border-gray-200 pt-4 mb-4">
+        <h3 class="text-sm font-semibold text-gray-800 mb-3">Update start date</h3>
+
+        <form method="POST" action="{% url 'adminapp:admin-update-project-start-date' project_id=project.pk %}" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {% csrf_token %}
+
+            <!-- Start Date -->
+            <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Start Date</label>
+            <input type="date"
+                    name="start_date"
+                    value="{{ project.start_date|date:'Y-m-d' }}"
+                    class="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:ring-1 focus:ring-gray-500">
+            </div>
+
+            <!-- Submit Button -->
+            <div class="flex items-end">
+            <button type="submit"
+                    class="w-full rounded bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 transition">
+                Update Start Date
+            </button>
+            </div>
+
+        </form>
+        </div>
+
+      <!-- Assign / Reassign Technician -->
+      <div class="border-t border-gray-200 pt-4">
+        <h3 class="text-sm font-semibold text-gray-700 mb-3">
+          {% if project.technician %}Reassign{% else %}Assign{% endif %} Technician
+        </h3>
+        <form method="post" action="{% url 'adminapp:admin-assign-technician' job_request_id=job_request.pk %}"
+              class="flex flex-col sm:flex-row items-start sm:items-end gap-3">
+          {% csrf_token %}
+          <div class="w-full sm:w-auto sm:min-w-62.5">
+            <select name="technician_id" required
+                    class="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500">
+              <option value="">— Select technician —</option>
+              {% for tech in technicians %}
+              <option value="{{ tech.pk }}" {% if project.technician and project.technician.pk == tech.pk %}selected{% endif %}>
+                {{ tech.full_name }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit"
+                  class="rounded bg-gray-800 px-5 py-2 text-sm font-medium text-white hover:bg-gray-700 active:bg-gray-900 transition">
+            {% if project.technician %}Reassign{% else %}Assign{% endif %}
+          </button>
+        </form>
+      </div>
+    </div>
+
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+<div class="border-b border-gray-200 mb-6">
+    <nav class="flex gap-6 -mb-px" aria-label="Tabs">
+        <a href="?tab=technicians"
+            class="pb-3 text-sm font-medium border-b-2 transition
+            {% if tab == 'technicians' %}border-gray-800 text-gray-800
+            {% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300
+            {% endif %}">
+            Technicians
+        </a>
+        <a href="?tab=services"
+            class="pb-3 text-sm font-medium border-b-2 transition
+            {% if tab == 'services' %}border-gray-800 text-gray-800
+            {% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}">
+            Services
+        </a>
+        <a href="?tab=requests"
+            class="pb-3 text-sm font-medium border-b-2 transition
+            {% if tab == 'requests' %}border-gray-800 text-gray-800
+            {% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}">
+            Requests
+        </a>
+        <a href="?tab=jobs"
+            class="pb-3 text-sm font-medium border-b-2 transition
+            {% if tab == 'jobs' %}border-gray-800 text-gray-800
+            {% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}">
+            Jobs
+        </a>
+        <a href="?tab=users"
+            class="pb-3 text-sm font-medium border-b-2 transition
+            {% if tab == 'users' %}border-gray-800 text-gray-800
+            {% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}">
+            All Users
+        </a>
+    </nav>
+</div>

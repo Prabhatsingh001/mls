@@ -1,0 +1,71 @@
+<!-- Job Request Modal -->
+<div id="requestModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-800">Request a Service</h3>
+        <button onclick="closeRequestModal()" class="text-gray-400 hover:text-gray-600 transition">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
+        </svg>
+        </button>
+    </div>
+    <p id="modalServiceName" class="text-sm text-gray-500 mb-4"></p>
+    <form method="post" action="{% url 'customerapp:customer-create-request' %}">
+        {% csrf_token %}
+        <input type="hidden" name="service" id="modalServiceId">
+
+        <div class="space-y-4">
+        <div>
+            <label for="description" class="block text-xs font-medium text-gray-600 mb-1">Describe the work needed <span class="text-red-500">*</span></label>
+            <textarea id="description" name="description" rows="3" required placeholder="E.g., Kitchen sink is leaking…"
+                    class="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500 resize-none"></textarea>
+        </div>
+        <div>
+            <label for="site_address" class="block text-xs font-medium text-gray-600 mb-1">Site Address <span class="text-red-500">*</span></label>
+            <input type="text" id="site_address" name="site_address" required placeholder="123 Main St, City"
+                class="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500">
+        </div>
+        <div>
+            <label for="preferred_date" class="block text-xs font-medium text-gray-600 mb-1">Preferred Date <span class="text-red-500">*</span></label>
+            <input type="date" id="preferred_date" name="preferred_date" required
+                class="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500">
+        </div>
+        </div>
+
+        <div class="mt-5 flex gap-3">
+        <button type="submit"
+                class="flex-1 rounded bg-gray-800 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-700 active:bg-gray-900 transition">
+            Submit Request
+        </button>
+        <button type="button" onclick="closeRequestModal()"
+                class="rounded border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition">
+            Cancel
+        </button>
+        </div>
+    </form>
+    </div>
+</div>
+
+<script>
+    // Set min date to today
+    document.getElementById('preferred_date').min = new Date().toISOString().split('T')[0];
+
+    function openRequestModal(serviceId, serviceName) {
+    document.getElementById('modalServiceId').value = serviceId;
+    document.getElementById('modalServiceName').textContent = 'Service: ' + serviceName;
+    const modal = document.getElementById('requestModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    }
+
+    function closeRequestModal() {
+    const modal = document.getElementById('requestModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    }
+
+    // Close on backdrop click
+    document.getElementById('requestModal').addEventListener('click', function(e) {
+    if (e.target === this) closeRequestModal();
+    });
+</script>

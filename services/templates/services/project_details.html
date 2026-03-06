@@ -1,0 +1,206 @@
+{% extends "index.html" %}
+
+{% block title %}PRJ-{{ project.pk }} — MLS{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl min-h-screen mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+
+    <!-- Back link -->
+    <a href="{% url 'services:tech-dashboard' %}" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition mb-6">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/>
+        </svg>
+        Back to Dashboard
+    </a>
+
+    <!-- Project Header -->
+    <div class="rounded-lg border border-gray-200 bg-white p-6 mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div>
+            <h1 class="text-xl sm:text-2xl font-bold text-gray-800">PRJ-{{ project.pk }}: {{ project.job_request.service.title }}</h1>
+            <p class="text-sm text-gray-500 mt-1">{{ project.job_request.service.category.name }}</p>
+        </div>
+        <div class="shrink-0">
+            {% if project.status == 'PENDING' %}
+            <span class="inline-flex items-center rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-700">Pending</span>
+            {% elif project.status == 'SCHED' %}
+            <span class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">Scheduled</span>
+            {% elif project.status == 'ONGOING' %}
+            <span class="inline-flex items-center rounded-full bg-indigo-100 px-3 py-1 text-xs font-medium text-indigo-700">In Progress</span>
+            {% elif project.status == 'COMPLETED' %}
+            <span class="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">Completed</span>
+            {% elif project.status == 'CANCELLED' %}
+            <span class="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700">Cancelled</span>
+            {% endif %}
+        </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+        <!-- Customer Information -->
+        <div class="rounded-lg border border-gray-200 bg-white p-6">
+        <h2 class="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0"/>
+            </svg>
+            Customer Information
+        </h2>
+        <dl class="space-y-3 text-sm">
+            <div>
+            <dt class="text-gray-500">Name</dt>
+            <dd class="font-medium text-gray-800">{{ project.job_request.customer.full_name }}</dd>
+            </div>
+            <div>
+            <dt class="text-gray-500">Email</dt>
+            <dd class="font-medium text-gray-800">{{ project.job_request.customer.email }}</dd>
+            </div>
+            {% if project.job_request.customer.phone_number %}
+            <div>
+            <dt class="text-gray-500">Phone</dt>
+            <dd class="font-medium text-gray-800">{{ project.job_request.customer.phone_number }}</dd>
+            </div>
+            {% endif %}
+        </dl>
+        </div>
+
+        <!-- Project Financials & Dates -->
+        <div class="rounded-lg border border-gray-200 bg-white p-6">
+        <h2 class="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"/>
+            </svg>
+            Dates &amp; Pricing
+        </h2>
+        <dl class="space-y-3 text-sm">
+            <div>
+            <dt class="text-gray-500">Quoted Amount</dt>
+            <dd class="text-lg font-bold text-gray-800">${{ project.quoted_amount }}</dd>
+            </div>
+            <div>
+            <dt class="text-gray-500">Preferred Date (Customer)</dt>
+            <dd class="font-medium text-gray-800">{{ project.job_request.preferred_date|date:"M d, Y" }}</dd>
+            </div>
+            {% if project.start_date %}
+            <div>
+            <dt class="text-gray-500">Start Date</dt>
+            <dd class="font-medium text-gray-800">{{ project.start_date|date:"M d, Y" }}</dd>
+            </div>
+            {% endif %}
+            {% if project.completion_date %}
+            <div>
+            <dt class="text-gray-500">Completion Date</dt>
+            <dd class="font-medium text-gray-800">{{ project.completion_date|date:"M d, Y" }}</dd>
+            </div>
+            {% endif %}
+            <div>
+            <dt class="text-gray-500">Request Created</dt>
+            <dd class="font-medium text-gray-800">{{ project.job_request.created_at|date:"M d, Y · h:i A" }}</dd>
+            </div>
+        </dl>
+        </div>
+    </div>
+
+    <!-- Site Address -->
+    <div class="rounded-lg border border-gray-200 bg-white p-6 mb-6">
+        <h2 class="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+        <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"/>
+        </svg>
+        Site Address
+        </h2>
+        <p class="text-sm text-gray-700">{{ project.job_request.site_address }}</p>
+    </div>
+
+    <!-- Job Description -->
+    <div class="rounded-lg border border-gray-200 bg-white p-6 mb-6">
+        <h2 class="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+        <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"/>
+        </svg>
+        Job Description
+        </h2>
+        <p class="text-sm text-gray-700 whitespace-pre-line">{{ project.job_request.description }}</p>
+    </div>
+
+    <!-- Service Details -->
+    <div class="rounded-lg border border-gray-200 bg-white p-6 mb-6">
+        <h2 class="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+        <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.049.58.025 1.193-.14 1.743"/>
+        </svg>
+        Service Details
+        </h2>
+        <dl class="space-y-3 text-sm">
+        <div>
+            <dt class="text-gray-500">Service</dt>
+            <dd class="font-medium text-gray-800">{{ project.job_request.service.title }}</dd>
+        </div>
+        <div>
+            <dt class="text-gray-500">Category</dt>
+            <dd class="font-medium text-gray-800">{{ project.job_request.service.category.name }}</dd>
+        </div>
+        <div>
+            <dt class="text-gray-500">Base Price</dt>
+            <dd class="font-medium text-gray-800">${{ project.job_request.service.base_price }}</dd>
+        </div>
+        {% if project.job_request.service.description %}
+        <div>
+            <dt class="text-gray-500">Service Description</dt>
+            <dd class="text-gray-700">{{ project.job_request.service.description }}</dd>
+        </div>
+        {% endif %}
+        </dl>
+    </div>
+
+    <!-- Internal Notes -->
+    {% if project.notes %}
+    <div class="rounded-lg border border-gray-200 bg-white p-6 mb-6">
+        <h2 class="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+        <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"/>
+        </svg>
+        Internal Notes
+        </h2>
+        <p class="text-sm text-gray-700 whitespace-pre-line">{{ project.notes }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Action Buttons -->
+    {% if project.status != 'COMPLETED' and project.status != 'CANCELLED' %}
+    <div class="rounded-lg border border-gray-200 bg-white p-6">
+        <h2 class="text-sm font-semibold text-gray-800 mb-4">Update Project Status</h2>
+        <div class="flex flex-wrap gap-3">
+        {% if project.status != 'ONGOING' %}
+        <form method="post" action="{% url 'services:update-project-status' project.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="status" value="ONGOING">
+            <button type="submit"
+                    class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 transition shadow-sm">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"/>
+            </svg>
+            Mark as In Progress
+            </button>
+        </form>
+        {% endif %}
+
+        <form method="post" action="{% url 'services:update-project-status' project.pk %}"
+                onsubmit="return confirm('Are you sure you want to mark this project as completed?')">
+            {% csrf_token %}
+            <input type="hidden" name="status" value="COMPLETED">
+            <button type="submit"
+                    class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-700 transition shadow-sm">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/>
+            </svg>
+            Mark as Completed
+            </button>
+        </form>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

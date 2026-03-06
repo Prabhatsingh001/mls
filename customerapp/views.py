@@ -14,16 +14,31 @@ def customer_dashboard(request):
     tab = request.GET.get("tab", "services")
 
     # Stats
-    my_requests = JobRequest.objects.filter(customer=request.user).select_related("service", "service__category")
-    my_projects = Project.objects.filter(source_request__customer=request.user).select_related(
-        "source_request__service", "technician"
+    my_requests = JobRequest.objects.filter(customer=request.user).select_related(
+        "service", "service__category"
     )
+    my_projects = Project.objects.filter(
+        job_request__customer=request.user
+    ).select_related("job_request__service", "technician")
 
     stats = {
         "total_requests": my_requests.count(),
-        "pending_requests": my_requests.filter(is_reviewed=False, is_converted_to_project=False).count(),
-        "active_projects": my_projects.filter(status__in=[Project.Status.PENDING, Project.Status.SCHEDULED, Project.Status.ONGOING]).count(),
-        "completed_projects": my_projects.filter(status=Project.Status.COMPLETED).count(),
+        "pending_requests": my_requests.filter(
+            is_reviewed=False, is_converted_to_project=False
+        ).count(),
+        "active_projects": my_projects.filter(
+            status__in=[
+                Project.Status.PENDING,
+                Project.Status.SCHEDULED,
+                Project.Status.ONGOING,
+            ]
+        ).count(),
+        "completed_projects": my_projects.filter(
+            status=Project.Status.COMPLETED
+        ).count(),
+        "cancelled_projects": my_projects.filter(
+            status=Project.Status.CANCELLED
+        ).count(),
     }
 
     context = {"tab": tab, "stats": stats}
@@ -33,10 +48,12 @@ def customer_dashboard(request):
         context["categories"] = categories
 
     elif tab == "my-requests":
-        context["requests"] = my_requests.order_by("-created_at")
+        context["requests"] = my_requests.exclude(
+            is_converted_to_project=True
+        ).order_by("-created_at")
 
     elif tab == "my-projects":
-        context["projects"] = my_projects.order_by("-source_request__created_at")
+        context["projects"] = my_projects.order_by("-job_request__created_at")
 
     return render(request, "customerapp/customer.html", context)
 
@@ -67,7 +84,9 @@ def customer_create_request(request):
         preferred_date=preferred_date,
     )
 
-    messages.success(request, f"Job request for '{service.title}' submitted successfully!")
+    messages.success(
+        request, f"Job request for '{service.title}' submitted successfully!"
+    )
     return redirect("customerapp:customer-dashboard")
 
 
@@ -81,7 +100,10 @@ def customer_cancel_request(request, request_id):
     job_request = get_object_or_404(JobRequest, pk=request_id, customer=request.user)
 
     if job_request.is_converted_to_project:
-        messages.error(request, "This request has already been converted to a project and cannot be cancelled.")
+        messages.error(
+            request,
+            "This request has already been converted to a project and cannot be cancelled.",
+        )
     else:
         job_request.delete()
         messages.success(request, "Job request cancelled successfully.")
