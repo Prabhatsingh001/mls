@@ -1,0 +1,95 @@
+<!-- Update Service Modal -->
+<div id="serviceModal" data-url-prefix="{% url 'adminapp:admin-update-service' service_id=0 %}" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-800">Update Service</h3>
+        <button onclick="closeServiceModal()" class="text-gray-400 hover:text-gray-600 transition">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
+        </svg>
+        </button>
+    </div>
+    <form id="serviceUpdateForm" method="post" action="">
+        {% csrf_token %}
+
+        <div class="space-y-4">
+        <!-- Category select -->
+        <div>
+            <label for="modal_category" class="block text-xs font-medium text-gray-600 mb-1">Category</label>
+            <select id="modal_category" name="category"
+                    class="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500">
+                <option value="">— Select existing category —</option>
+                {% for cat in categories %}
+                <option value="{{ cat.pk }}">{{ cat.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <!-- New category -->
+        <div>
+            <label for="modal_new_category" class="block text-xs font-medium text-gray-600 mb-1">Or New Category</label>
+            <input type="text" id="modal_new_category" name="new_category" placeholder="e.g., Pool Maintenance"
+                class="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500">
+        </div>
+        <!-- Title -->
+        <div>
+            <label for="modal_title" class="block text-xs font-medium text-gray-600 mb-1">Service Title <span class="text-red-500">*</span></label>
+            <input type="text" id="modal_title" name="title" required placeholder="e.g., Pipe Leak Repair"
+                class="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500">
+        </div>
+        <!-- Base price -->
+        <div>
+            <label for="modal_base_price" class="block text-xs font-medium text-gray-600 mb-1">Base Price ($) <span class="text-red-500">*</span></label>
+            <input type="number" step="0.01" min="0" id="modal_base_price" name="base_price" required placeholder="0.00"
+                class="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500">
+        </div>
+        <!-- Description -->
+        <div>
+            <label for="modal_description" class="block text-xs font-medium text-gray-600 mb-1">Description</label>
+            <textarea id="modal_description" name="description" rows="3" placeholder="Brief description of the service…"
+                    class="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500 resize-none"></textarea>
+        </div>
+        </div>
+
+        <div class="mt-5 flex gap-3">
+        <button type="submit"
+                class="flex-1 rounded bg-gray-800 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-700 active:bg-gray-900 transition">
+            Update Service
+        </button>
+        <button type="button" onclick="closeServiceModal()"
+                class="rounded border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition">
+            Cancel
+        </button>
+        </div>
+    </form>
+    </div>
+</div>
+
+<script>
+    function openEditServiceModal(serviceId, serviceName, categoryId, basePrice, description) {
+        // Set form action to the correct URL with the service ID
+        var urlPrefix = document.getElementById('serviceModal').dataset.urlPrefix;
+        document.getElementById('serviceUpdateForm').action = urlPrefix.replace('/0/', '/' + serviceId + '/');
+
+        // Populate fields with current values
+        document.getElementById('modal_title').value = serviceName;
+        document.getElementById('modal_category').value = categoryId;
+        document.getElementById('modal_base_price').value = basePrice;
+        document.getElementById('modal_description').value = description || '';
+        document.getElementById('modal_new_category').value = '';
+
+        const modal = document.getElementById('serviceModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function closeServiceModal() {
+        const modal = document.getElementById('serviceModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    // Close on backdrop click
+    document.getElementById('serviceModal').addEventListener('click', function(e) {
+        if (e.target === this) closeServiceModal();
+    });
+</script>

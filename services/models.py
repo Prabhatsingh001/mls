@@ -14,6 +14,11 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
+    
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = self.name.lower().replace(" ", "-")
+        super().save(*args, **kwargs)
 
 
 class Service(models.Model):
@@ -50,6 +55,7 @@ class JobRequest(models.Model):
     # Track the lead status
     is_reviewed = models.BooleanField(default=False)
     is_converted_to_project = models.BooleanField(default=False)
+    is_project_completed = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Request: {self.service.title} by {self.customer.full_name}"

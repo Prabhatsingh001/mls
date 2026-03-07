@@ -12,7 +12,7 @@ class UserAdmin(admin.ModelAdmin):
 
 @admin.register(TechnicianProfile)
 class TechnicianProfileAdmin(admin.ModelAdmin):
-    list_display = ("verification_status", "created_at")
+    list_display = ("user", "verification_status", "created_at")
     list_filter = ("verification_status",)
     search_fields = ("user__email", "user__full_name")
     ordering = ("-created_at",)

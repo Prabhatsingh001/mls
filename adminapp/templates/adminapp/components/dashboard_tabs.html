@@ -7,6 +7,12 @@
             {% endif %}">
             Technicians
         </a>
+        <a href="?tab=categories"
+            class="pb-3 text-sm font-medium border-b-2 transition
+            {% if tab == 'categories' %}border-gray-800 text-gray-800
+            {% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}">
+            Categories
+        </a>
         <a href="?tab=services"
             class="pb-3 text-sm font-medium border-b-2 transition
             {% if tab == 'services' %}border-gray-800 text-gray-800

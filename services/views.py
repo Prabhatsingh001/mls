@@ -57,6 +57,7 @@ def tech_dashboard(request):
         },
     )
 
+
 @login_required()
 def view_assignend_project_details(request, project_id):
     """View details of a specific project assigned to the technician."""
@@ -98,6 +99,7 @@ def update_project_status(request, project_id):
         project.start_date = timezone.now().date()
     elif new_status == Project.Status.COMPLETED:
         project.completion_date = timezone.now().date()
+        project.job_request.is_project_completed = True
     project.save()
 
     label = dict(Project.Status.choices).get(new_status, new_status)

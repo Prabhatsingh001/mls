@@ -53,7 +53,15 @@ def admin_dashboard(request):
     elif tab == "services":
         services_qs = (
             Service.objects.select_related("category")
-            .only("id", "title", "category__name")
+            .only(
+                "id",
+                "title",
+                "description",
+                "base_price",
+                "is_active",
+                "category__id",
+                "category__name",
+            )
             .order_by("category__name", "title")
         )
 
@@ -104,6 +112,13 @@ def admin_dashboard(request):
         context["job_statuses"] = Project.Status.choices
         context["current_status"] = status_filter
 
+    elif tab == "categories":
+        categories_qs = Category.objects.only("id", "name", "description").order_by(
+            "name"
+        )
+        paginator = Paginator(categories_qs, 10)
+        context["categories"] = paginator.get_page(page_number)
+
     return render(request, "adminapp/admin.html", context)
 
 
@@ -143,6 +158,84 @@ def admin_make_admin(request, user_id):
     return redirect(request.META.get("HTTP_REFERER", "")) or redirect(
         "adminapp:admin-dashboard"
     )
+
+
+@login_required()
+@role_required([User.Role.ADMIN])
+def admin_remove_admin(request, user_id):
+    """Demote an admin to regular user role."""
+    if request.method == "POST":
+        target = get_object_or_404(User, pk=user_id)
+        if target.is_superuser:
+            messages.error(request, "You cannot demote a superuser.")
+        if target.pk == request.user.pk:
+            messages.error(request, "You cannot demote yourself from admin.")
+        elif target.role != User.Role.ADMIN:
+            messages.info(request, f"{target.full_name} is not an admin.")
+        else:
+            target.role = User.Role.CUSTOMER  # Default to customer role
+            target.is_staff = False
+            target.save()
+            messages.success(
+                request, f"{target.full_name} has been demoted from Admin."
+            )
+    return redirect(request.META.get("HTTP_REFERER", "")) or redirect(
+        "adminapp:admin-dashboard"
+    )
+
+
+@login_required()
+@role_required([User.Role.ADMIN])
+def admin_create_category(request):
+    if request.method == "POST":
+        name = request.POST.get("name", "").strip()
+        description = request.POST.get("description", "").strip()
+        if not name:
+            messages.error(request, "Category name is required.")
+            return redirect("adminapp:admin-dashboard")
+        try:
+            Category.objects.create(name=name, description=description)
+            messages.success(request, f'Category "{name}" created successfully.')
+        except Exception as e:
+            messages.error(request, f"Failed to create category: {e}")
+    return redirect("adminapp:admin-dashboard")
+
+
+@login_required()
+@role_required([User.Role.ADMIN])
+def admin_edit_category(request, category_id):
+    category = get_object_or_404(Category, pk=category_id)
+    if request.method == "POST":
+        name = request.POST.get("name", "").strip()
+        description = request.POST.get("description", "").strip()
+        if not name:
+            messages.error(request, "Category name is required.")
+            return redirect("adminapp:admin-dashboard")
+        try:
+            category.name = name
+            category.description = description
+            category.save(update_fields=["name", "description"])
+            messages.success(request, f'Category "{name}" updated successfully.')
+        except Exception as e:
+            messages.error(request, f"Failed to update category: {e}")
+    return redirect("adminapp:admin-dashboard")
+
+
+@login_required()
+@role_required([User.Role.ADMIN])
+def admin_delete_category(request, category_id):
+    if request.method == "POST":
+        category = get_object_or_404(Category, pk=category_id)
+        name = category.name
+        try:
+            category.delete()
+            messages.success(request, f'Category "{name}" has been deleted.')
+        except Exception as e:
+            messages.error(request, f"Failed to delete category: {e}")
+            return redirect(request.META.get("HTTP_REFERER", "")) or redirect(
+                "adminapp:admin-dashboard"
+            )
+    return redirect("adminapp:admin-dashboard")
 
 
 @login_required()
@@ -194,10 +287,16 @@ def admin_create_service(request):
 def admin_delete_service(request, service_id):
     """Delete a service."""
     if request.method == "POST":
-        service = get_object_or_404(Service, pk=service_id)
-        name = str(service)
-        service.delete()
-        messages.success(request, f'Service "{name}" has been deleted.')
+        try:
+            service = get_object_or_404(Service, pk=service_id)
+            name = str(service)
+            service.delete()
+            messages.success(request, f'Service "{name}" has been deleted.')
+        except Exception as e:
+            messages.error(request, f"Failed to delete service: {e}")
+            return redirect(request.META.get("HTTP_REFERER", "")) or redirect(
+                "adminapp:admin-dashboard"
+            )
     return redirect("adminapp:admin-dashboard")
 
 
@@ -260,28 +359,6 @@ def admin_toggle_service(request, service_id):
 
 @login_required()
 @role_required([User.Role.ADMIN])
-def get_service_requests(request, service_id):
-    """View all requests for a specific service."""
-    service = get_object_or_404(Service, pk=service_id)
-    requests_qs = (
-        service.job_requests.select_related("customer")  # type: ignore
-        .only(  # type: ignore
-            "id", "customer__full_name", "status", "created_at"
-        )
-        .order_by("-created_at")
-    )
-
-    paginator = Paginator(requests_qs, 10)
-    page_number = request.GET.get("page")
-    context = {
-        "service": service,
-        "requests": paginator.get_page(page_number),
-    }
-    return render(request, "adminapp/service_requests.html", context)
-
-
-@login_required()
-@role_required([User.Role.ADMIN])
 def get_user_details(request, user_id):
     """View detailed information about a user."""
     target_user = get_object_or_404(User, pk=user_id)
@@ -338,7 +415,6 @@ def admin_get_requested_service_details(request, job_request_id):
         User.objects.filter(
             role=User.Role.TECHNICIAN,
             is_active=True,
-            technicianprofile__verification_status=TechnicianProfile.VerificationStatus.VERIFIED,
         )
         .only("id", "full_name")
         .order_by("full_name")
@@ -379,7 +455,6 @@ def admin_assign_technician(request, job_request_id):
                 pk=technician_id,
                 role=User.Role.TECHNICIAN,
                 is_active=True,
-                technicianprofile__verification_status=TechnicianProfile.VerificationStatus.VERIFIED,
             )
             project.technician = technician
             project.save(update_fields=["technician"])
@@ -421,7 +496,6 @@ def admin_convert_to_project(request, job_request_id):
                 pk=technician_id,
                 role=User.Role.TECHNICIAN,
                 is_active=True,
-                technicianprofile__verification_status=TechnicianProfile.VerificationStatus.VERIFIED,
             )
 
         if start_date:

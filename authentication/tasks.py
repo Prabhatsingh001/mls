@@ -39,9 +39,10 @@ def send_welcome_email(user_id):
     Both HTML and plain text versions are sent using the welcome_email.html template.
     """
     from .models import User
+
     user = User.objects.get(id=user_id)
     login_url = f"{settings.PROTOCOL}://{settings.SITE_DOMAIN}/a/login/"
-    subject = "Welcome to URL.ly!!"
+    subject = "Welcome to MLS!!"
     html_content = render_to_string(
         "emails/welcome_email.html",
         {
@@ -51,10 +52,10 @@ def send_welcome_email(user_id):
     )
     text_content = (
         f"Hi {user.full_name},\n\n"
-        "Welcome to URL.ly!\n\n"
+        "Welcome to MLS!!\n\n"
         f"Email: {user.email}\n\n"
         f"Login: {login_url}\n\n"
-        "If you didn’t sign up, ignore this email.\n\n— URL.ly Team"
+        "If you didn’t sign up, ignore this email.\n\n— MLS Team"
     )
 
     email = EmailMultiAlternatives(
@@ -89,7 +90,7 @@ def send_verification_mail(user_id):
     user = User.objects.get(id=user_id)
     current_site = settings.SITE_DOMAIN
     protocol = settings.PROTOCOL
-    subject = "Confirm your email - URL.LY"
+    subject = "Confirm your email - MLS"
     html_content = render_to_string(
         "emails/email_verification.html",
         {
@@ -108,7 +109,7 @@ def send_verification_mail(user_id):
         {protocol}://{current_site}/a/activate/{urlsafe_base64_encode(force_bytes(user.pk))}/{account_activation_token.make_token(user)}/
         If you did not create an account, please ignore this email.
 
-        Thank you for joining URL.LY!
+        Thank you for joining MLS!!
     """
 
     email = EmailMultiAlternatives(
@@ -144,6 +145,7 @@ def send_reset_password_email(
     reset token for secure password reset process.
     """
     from .models import User
+
     user = User.objects.get(id=user_id)
     subject = "Reset Password"
     uid = urlsafe_base64_encode(force_bytes(user.pk))
@@ -164,7 +166,7 @@ def send_reset_password_email(
         You have requested to reset your password. Please click the link below to reset it:
         {protocol}://{current_site}/a/reset-password/{uid}/{token}/
         If you did not request this, please ignore this email.
-        Thank you for using URL.LY!
+        Thank you for using MLS!!
     """
 
     email = EmailMultiAlternatives(
@@ -194,6 +196,7 @@ def password_reset_success_email(user_id):
     Uses password_reset_success_email.html template for consistent branding.
     """
     from .models import User
+
     user = User.objects.get(id=user_id)
     subject = "Password Reset Successfully"
     html_content = render_to_string(
@@ -208,7 +211,7 @@ def password_reset_success_email(user_id):
         Hi {user.full_name},
         Your password has been reset successfully. You can now log in with your new password.
         If you did not request this change, please contact support immediately.
-        Thank you for using URL.LY!
+        Thank you for using MLS!!
     """
     email = EmailMultiAlternatives(
         subject,

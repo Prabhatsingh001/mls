@@ -1,0 +1,85 @@
+<!-- Category Modal (Create / Edit) -->
+<div id="categoryModal"
+     data-create-url="{% url 'adminapp:admin-create-category' %}"
+     data-edit-url-prefix="{% url 'adminapp:admin-edit-category' category_id=0 %}"
+     class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+            <h3 id="categoryModalTitle" class="text-lg font-semibold text-gray-800">Create Category</h3>
+            <button onclick="closeCategoryModal()" class="text-gray-400 hover:text-gray-600 transition">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <form id="categoryForm" method="post" action="">
+            {% csrf_token %}
+            <div class="space-y-4">
+                <!-- Name -->
+                <div>
+                    <label for="cat_name" class="block text-xs font-medium text-gray-600 mb-1">
+                        Category Name <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="cat_name" name="name" required
+                           placeholder="e.g., Plumbing"
+                           class="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500">
+                </div>
+                <!-- Description -->
+                <div>
+                    <label for="cat_description" class="block text-xs font-medium text-gray-600 mb-1">
+                        Description
+                    </label>
+                    <textarea id="cat_description" name="description" rows="3"
+                              placeholder="Brief description of the category…"
+                              class="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500 resize-none"></textarea>
+                </div>
+            </div>
+
+            <div class="mt-5 flex gap-3">
+                <button type="submit" id="categorySubmitBtn"
+                        class="flex-1 rounded bg-gray-800 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-700 active:bg-gray-900 transition">
+                    Create Category
+                </button>
+                <button type="button" onclick="closeCategoryModal()"
+                        class="rounded border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openCreateCategoryModal() {
+        var modal = document.getElementById('categoryModal');
+        document.getElementById('categoryModalTitle').textContent = 'Create Category';
+        document.getElementById('categorySubmitBtn').textContent = 'Create Category';
+        document.getElementById('categoryForm').action = modal.dataset.createUrl;
+        document.getElementById('cat_name').value = '';
+        document.getElementById('cat_description').value = '';
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function openEditCategoryModal(categoryId, name, description) {
+        var modal = document.getElementById('categoryModal');
+        document.getElementById('categoryModalTitle').textContent = 'Update Category';
+        document.getElementById('categorySubmitBtn').textContent = 'Update Category';
+        document.getElementById('categoryForm').action = modal.dataset.editUrlPrefix.replace('/0/', '/' + categoryId + '/');
+        document.getElementById('cat_name').value = name;
+        document.getElementById('cat_description').value = description || '';
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function closeCategoryModal() {
+        var modal = document.getElementById('categoryModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    document.getElementById('categoryModal').addEventListener('click', function(e) {
+        if (e.target === this) closeCategoryModal();
+    });
+</script>

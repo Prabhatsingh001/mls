@@ -1,0 +1,59 @@
+<div>
+    <h2 class="text-lg font-semibold text-gray-800 mb-4">Recent Service Requests</h2>
+
+    {% if requests %}
+    <div class="overflow-x-auto rounded-lg border border-gray-200">
+        <table class="min-w-full divide-y divide-gray-200 bg-white text-sm">
+        <thead class="bg-gray-50">
+            <tr>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requested On</th>
+            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+            {% for req in requests %}
+            <tr class="hover:bg-gray-50 transition">
+            <td class="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">{{ req.customer.full_name }}</td>
+            <td class="px-4 py-3 whitespace-nowrap">{{ req.service.category.name }}</td>
+            <td class="px-4 py-3 whitespace-nowrap">{{ req.service.title }}</td>
+            <td class="px-4 py-3 text-gray-500 whitespace-nowrap">{{ req.created_at|date:"M d, Y H:i" }}</td>
+            <td class="px-4 py-3 text-center whitespace-nowrap">
+                {% if req.is_converted_to_project %}
+                <span class="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                    <span class="h-1.5 w-1.5 rounded-full bg-blue-500"></span> Project
+                </span>
+                {% elif req.is_reviewed %}
+                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span> Reviewed
+                </span>
+                {% else %}
+                <span class="inline-flex items-center gap-1 rounded-full bg-yellow-50 border border-yellow-200 px-2.5 py-0.5 text-xs font-medium text-yellow-700">
+                    <span class="h-1.5 w-1.5 rounded-full bg-yellow-500"></span> Pending
+                </span>
+                {% endif %}
+            </td>
+            <td class="px-4 py-3 text-center whitespace-nowrap">
+                <a href="{% url 'adminapp:admin-review-details' job_request_id=req.pk %}"
+                    class="rounded px-3 py-1.5 text-xs font-medium bg-gray-800 text-white hover:bg-gray-700 transition">
+                Review
+                </a>
+            </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% include "pagination.html" with page_obj=requests %}
+
+    {% else %}
+    <div class="rounded-lg border border-gray-200 bg-white p-8 text-center">
+        <p class="text-sm text-gray-500">No service requests have been made yet.</p>
+    </div>
+    {% endif %}
+</div>

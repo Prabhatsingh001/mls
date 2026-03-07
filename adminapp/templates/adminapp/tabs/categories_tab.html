@@ -1,0 +1,68 @@
+<button class="mb-6 rounded bg-gray-800 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-700 active:bg-gray-900 transition"
+        onclick="openCreateCategoryModal()">
+    Create New Category
+</button>
+    {% include "adminapp/components/category_modal.html" %}
+<h2 class="text-lg font-semibold text-gray-800 mb-4">All Categories</h2>
+
+{% if categories %}
+<div class="overflow-x-auto rounded-lg border border-gray-200">
+    <table class="min-w-full divide-y divide-gray-200 bg-white text-sm">
+        <thead class="bg-gray-50">
+            <tr>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Active</th>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+            {% for cat in categories %}
+            <tr class="hover:bg-gray-50 transition">
+                <td class="px-4 py-3 text-gray-800 whitespace-nowrap font-medium">CAT-{{ cat.id }}</td>
+                <td class="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">{{ cat.name }}</td>
+                <td class="px-4 py-3 text-gray-600">
+                    {% if cat.description %}
+                        {{ cat.description|truncatewords:30 }}
+                    {% else %}
+                        <span class="text-gray-400 italic">No description</span>
+                    {% endif %}
+                </td>
+                <td class="px-4 py-3 text-center whitespace-nowrap">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                        Active
+                    </span>
+                </td>
+                <td class="px-4 py-3 text-center whitespace-nowrap">
+                    <div class="flex items-center justify-center gap-2">
+                    <form method="post" action="{% url 'adminapp:admin-delete-category' category_id=cat.pk %}"
+                            onsubmit="return confirm('Delete category &quot;{{ cat.name }}&quot;? This cannot be undone.')">
+                        {% csrf_token %}
+                        <button type="submit"
+                                class="rounded px-3 py-1.5 text-xs font-medium bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition">
+                        Delete
+                        </button>
+                    </form>
+                    <button onclick="openEditCategoryModal({{ cat.pk }}, '{{ cat.name|escapejs }}', '{{ cat.description|escapejs }}')"
+                            class="rounded px-3 py-1.5 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition">
+                    Update
+                    </button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+{% if categories.has_other_pages %}
+    {% include "pagination.html" with page_obj=categories %}
+{% endif %}
+
+{% else %}
+<div class="rounded-lg border border-gray-200 bg-white p-8 text-center">
+    <p class="text-gray-500">No categories found.</p>
+</div>
+{% endif %}

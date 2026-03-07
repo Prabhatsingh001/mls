@@ -1,5 +1,6 @@
 <div>
     {% include "adminapp/components/create_service_form.html" %}
+    {% include "adminapp/components/service_form_modal.html" %}
 
 <!-- Existing Services Table -->
 <h2 class="text-lg font-semibold text-gray-800 mb-4">All Services</h2>
@@ -56,6 +57,10 @@
                 Delete
                 </button>
             </form>
+            <button onclick="openEditServiceModal({{ svc.pk }}, '{{ svc.title|escapejs }}', {{ svc.category_id }}, '{{ svc.base_price }}', '{{ svc.description|escapejs }}')"
+                    class="rounded px-3 py-1.5 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition">
+            Update
+            </button>
             </div>
         </td>
         </tr>
@@ -63,6 +68,9 @@
     </tbody>
     </table>
 </div>
+    
+{% include "pagination.html" with page_obj=services %}
+
 {% else %}
 <div class="rounded-lg border border-gray-200 bg-white p-8 text-center">
     <p class="text-sm text-gray-500">No services have been created yet. Use the form above to add one.</p>

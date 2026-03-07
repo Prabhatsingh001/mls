@@ -10,6 +10,22 @@ urlpatterns = [
         name="admin-toggle-active",
     ),
     path("make-admin/<int:user_id>/", views.admin_make_admin, name="admin-make-admin"),
+    path(
+        "remove-admin/<int:user_id>/",
+        views.admin_remove_admin,
+        name="admin-remove-admin",
+    ),
+    path("create-category/", views.admin_create_category, name="admin-create-category"),
+    path(
+        "edit-category/<int:category_id>/",
+        views.admin_edit_category,
+        name="admin-edit-category",
+    ),
+    path(
+        "delete-category/<int:category_id>/",
+        views.admin_delete_category,
+        name="admin-delete-category",
+    ),
     path("create-service/", views.admin_create_service, name="admin-create-service"),
     path(
         "delete-service/<int:service_id>/",
@@ -20,6 +36,11 @@ urlpatterns = [
         "toggle-service/<int:service_id>/",
         views.admin_toggle_service,
         name="admin-toggle-service",
+    ),
+    path(
+        "update-service/<int:service_id>/",
+        views.admin_edit_service,
+        name="admin-update-service",
     ),
     path("user/<int:user_id>/", views.get_user_details, name="admin-user-details"),
     path(
