@@ -11,6 +11,8 @@
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
             <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Verification</th>
+            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Availability</th>
             <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
         </thead>
@@ -24,13 +26,35 @@
             <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ tech.phone_number|default:"—" }}</td>
             <td class="px-4 py-3 text-gray-500 whitespace-nowrap">{{ tech.date_joined|date:"M d, Y" }}</td>
             <td class="px-4 py-3 text-center whitespace-nowrap">
-                {% if tech.is_active %}
+                {% if tech.is_blocked %}
+                <span class="inline-flex items-center gap-1 rounded-full bg-red-50 border border-red-200 px-2.5 py-0.5 text-xs font-medium text-red-700">
+                    <span class="h-1.5 w-1.5 rounded-full bg-red-500"></span> Inactive
+                </span>
+                {% else %}
                 <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
                     <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span> Active
                 </span>
+                {% endif %}
+            </td>
+            <td class="px-4 py-3 text-center whitespace-nowrap">
+                {% if tech.technician_profile.verification_status == 'verified' %}
+                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span> Verified
+                </span>
                 {% else %}
-                <span class="inline-flex items-center gap-1 rounded-full bg-red-50 border border-red-200 px-2.5 py-0.5 text-xs font-medium text-red-700">
-                    <span class="h-1.5 w-1.5 rounded-full bg-red-500"></span> Inactive
+                <span class="inline-flex items-center gap-1 rounded-full bg-yellow-50 border border-yellow-200 px-2.5 py-0.5 text-xs font-medium text-yellow-700">
+                    <span class="h-1.5 w-1.5 rounded-full bg-yellow-500"></span> Pending
+                </span>
+                {% endif %}
+            </td>
+            <td class="px-4 py-3 text-center whitespace-nowrap">
+                {% if tech.technician_profile.is_available %}
+                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span> Available
+                </span>
+                {% else %}
+                <span class="inline-flex items-center gap-1 rounded-full bg-gray-50 border border-gray-200 px-2.5 py-0.5 text-xs font-medium text-gray-700">
+                    <span class="h-1.5 w-1.5 rounded-full bg-gray-500"></span> Unavailable
                 </span>
                 {% endif %}
             </td>
@@ -40,8 +64,8 @@
                     {% csrf_token %}
                     <button type="submit"
                             class="rounded px-3 py-1.5 text-xs font-medium transition
-                            {% if tech.is_active %}bg-red-50 text-red-700 border border-red-200 hover:bg-red-100{% else %}bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100{% endif %}">
-                    {% if tech.is_active %}Deactivate{% else %}Activate{% endif %}
+                            {% if tech.is_blocked %}bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerlad-100{% else %}bg-red-50 text-red-700 border border-red-200 hover:bg-red-100{% endif %}">
+                    {% if tech.is_blocked %}Activate{% else %}Deactivate{% endif %}
                     </button>
                 </form>
                 <form method="post" action="{% url 'adminapp:admin-make-admin' user_id=tech.pk %}"

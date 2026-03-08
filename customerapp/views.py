@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from authentication.decorators import role_required
 from authentication.models import User
-from services.models import Category, Service, JobRequest, Project
+from services.models import Category, JobRequest, Project, Service
 
 
 @login_required()
@@ -88,6 +88,60 @@ def customer_create_request(request):
         request, f"Job request for '{service.title}' submitted successfully!"
     )
     return redirect("customerapp:customer-dashboard")
+
+
+@login_required()
+@role_required([User.Role.CUSTOMER])
+def customer_edit_job_request(request, job_request_id):
+    """Edit a job request that hasn't been converted to a project yet."""
+    job_request = get_object_or_404(
+        JobRequest,
+        pk=job_request_id,
+        customer=request.user,
+        is_converted_to_project=False,
+    )
+
+    if request.method == "POST":
+        description = request.POST.get("description", "").strip()
+        site_address = request.POST.get("site_address", "").strip()
+        preferred_date = request.POST.get("preferred_date", "").strip()
+
+        if not all([description, site_address, preferred_date]):
+            messages.error(request, "All fields are required.")
+            return redirect("customerapp:customer-dashboard")
+
+        job_request.description = description
+        job_request.site_address = site_address
+        job_request.preferred_date = preferred_date
+        job_request.save()
+
+        messages.success(request, "Job request updated successfully.")
+        return redirect("customerapp:customer-dashboard")
+
+    context = {"job_request": job_request}
+    return render(request, "customerapp/edit_job_request.html", context)
+
+
+@login_required()
+@role_required([User.Role.CUSTOMER])
+def customer_request_detail(request, job_request_id):
+    """View full details of a job request."""
+    job_request = get_object_or_404(
+        JobRequest.objects.select_related("service", "service__category"),
+        pk=job_request_id,
+        customer=request.user,
+    )
+
+    project = None
+    if job_request.is_converted_to_project:
+        project = (
+            Project.objects.filter(job_request=job_request)
+            .select_related("technician")
+            .first()
+        )
+
+    context = {"job_request": job_request, "project": project}
+    return render(request, "customerapp/request_details.html", context)
 
 
 @login_required()

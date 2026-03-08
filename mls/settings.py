@@ -10,8 +10,9 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
-from decouple import config
 from pathlib import Path
+
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -26,9 +27,12 @@ SECRET_KEY = config("SECRET_KEY", cast=str)
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+SOCIAL_AUTH_RAISE_EXCEPTIONS = False
 LOGIN_URL = "a:login"
 LOGOUT_REDIRECT_URL = "a:login"
 LOGIN_REDIRECT_URL = "a:redirect-dashboard"
+SOCIAL_AUTH_LOGIN_ERROR_URL = "a:login"
+SOCIAL_AUTH_AUTHENTICATION_ERROR_URL = "a:login"
 
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = config("GOOGLE_CLIENT_ID", cast=str)
 SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = config("GOOGLE_CLIENT_SECRET", cast=str)
@@ -52,6 +56,7 @@ INSTALLED_APPS = [
     "billing",
     "adminapp",
     "customerapp",
+    "notification",
     "tailwind",
     "theme",
 ]
@@ -65,8 +70,10 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "authentication.middleware.RoleRequiredMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
+    "authentication.middleware.RoleRequiredMiddleware",
+    "adminapp.middleware.BlockedUserMiddleware",
+    "authentication.middleware.CustomSocialAuthExceptionMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
@@ -108,7 +115,6 @@ TAILWIND_APP_NAME = "theme"
 NPM_BIN_PATH = "C:\\Program Files\\nodejs\\npm.cmd"
 
 if DEBUG:
-    SOCIAL_AUTH_RAISE_EXCEPTIONS = True
     SITE_DOMAIN = "127.0.0.1:8000"
     PROTOCOL = "http"
     ALLOWED_HOSTS = ["127.0.0.1"]
@@ -198,7 +204,8 @@ SOCIAL_AUTH_PIPELINE = (
     "social_core.pipeline.social_auth.social_uid",
     "social_core.pipeline.social_auth.auth_allowed",
     "social_core.pipeline.social_auth.social_user",
-    "authentication.pipelines.create_google_user",
+    "authentication.pipelines.check_user_not_blocked",
+    "authentication.pipelines.get_or_create_user",
     "social_core.pipeline.social_auth.associate_user",
     "social_core.pipeline.social_auth.load_extra_data",
 )

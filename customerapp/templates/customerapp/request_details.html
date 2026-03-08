@@ -1,0 +1,184 @@
+{% extends "index.html" %}
+
+{% block title %}Request #{{ job_request.pk }} — MLS{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl min-h-screen mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+
+  <!-- Back link -->
+  <a href="{% url 'customerapp:customer-dashboard' %}?tab=my-requests"
+     class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition mb-6">
+    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/>
+    </svg>
+    Back to My Requests
+  </a>
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div>
+      <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Request #{{ job_request.pk }}</h1>
+      <p class="mt-1 text-sm text-gray-500">Submitted on {{ job_request.created_at|date:"M d, Y \a\t g:i A" }}</p>
+    </div>
+    <div>
+      {% if job_request.is_converted_to_project %}
+        <span class="inline-flex items-center gap-1.5 rounded-full bg-blue-50 border border-blue-200 px-3 py-1 text-xs font-medium text-blue-700">
+          <span class="h-1.5 w-1.5 rounded-full bg-blue-500"></span> Project Created
+        </span>
+      {% elif job_request.is_reviewed %}
+        <span class="inline-flex items-center gap-1.5 rounded-full bg-yellow-50 border border-yellow-200 px-3 py-1 text-xs font-medium text-yellow-700">
+          <span class="h-1.5 w-1.5 rounded-full bg-yellow-500"></span> Under Review
+        </span>
+      {% else %}
+        <span class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 border border-gray-300 px-3 py-1 text-xs font-medium text-gray-600">
+          <span class="h-1.5 w-1.5 rounded-full bg-gray-400"></span> Pending
+        </span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Service & Request Details Card -->
+  <div class="rounded-lg bg-white border border-gray-200 shadow-sm mb-6">
+    <div class="border-b border-gray-200 px-6 py-4">
+      <h2 class="text-sm font-semibold text-gray-800 uppercase tracking-wider">Service Details</h2>
+    </div>
+    <div class="px-6 py-5 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
+      <!-- Category -->
+      <div>
+        <dt class="text-xs font-medium text-gray-500 mb-1">Category</dt>
+        <dd class="text-sm text-gray-800">{{ job_request.service.category.name }}</dd>
+      </div>
+      <!-- Service -->
+      <div>
+        <dt class="text-xs font-medium text-gray-500 mb-1">Service</dt>
+        <dd class="text-sm text-gray-800">{{ job_request.service.title }}</dd>
+      </div>
+      <!-- Base Price -->
+      <div>
+        <dt class="text-xs font-medium text-gray-500 mb-1">Base Price</dt>
+        <dd class="text-sm text-gray-800">₹{{ job_request.service.base_price }}</dd>
+      </div>
+      <!-- Preferred Date -->
+      <div>
+        <dt class="text-xs font-medium text-gray-500 mb-1">Preferred Date</dt>
+        <dd class="text-sm text-gray-800">{{ job_request.preferred_date|date:"M d, Y" }}</dd>
+      </div>
+    </div>
+  </div>
+
+  <!-- Work Description & Address Card -->
+  <div class="rounded-lg bg-white border border-gray-200 shadow-sm mb-6">
+    <div class="border-b border-gray-200 px-6 py-4">
+      <h2 class="text-sm font-semibold text-gray-800 uppercase tracking-wider">Request Information</h2>
+    </div>
+    <div class="px-6 py-5 space-y-5">
+      <!-- Description -->
+      <div>
+        <dt class="text-xs font-medium text-gray-500 mb-1">Description</dt>
+        <dd class="text-sm text-gray-800 whitespace-pre-line">{{ job_request.description }}</dd>
+      </div>
+      <!-- Site Address -->
+      <div>
+        <dt class="text-xs font-medium text-gray-500 mb-1">Site Address</dt>
+        <dd class="text-sm text-gray-800">{{ job_request.site_address }}</dd>
+      </div>
+    </div>
+  </div>
+
+  <!-- Project Details (if converted) -->
+  {% if project %}
+  <div class="rounded-lg bg-white border border-gray-200 shadow-sm mb-6">
+    <div class="border-b border-gray-200 px-6 py-4">
+      <h2 class="text-sm font-semibold text-gray-800 uppercase tracking-wider">Project Details</h2>
+    </div>
+    <div class="px-6 py-5 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
+      <!-- Project ID -->
+      <div>
+        <dt class="text-xs font-medium text-gray-500 mb-1">Project ID</dt>
+        <dd class="text-sm text-gray-800">PRJ-{{ project.pk }}</dd>
+      </div>
+      <!-- Status -->
+      <div>
+        <dt class="text-xs font-medium text-gray-500 mb-1">Status</dt>
+        <dd class="text-sm">
+          {% if project.status == 'COMPLETED' %}
+            <span class="inline-flex items-center gap-1 rounded-full bg-green-50 border border-green-200 px-2.5 py-0.5 text-xs font-medium text-green-700">
+              <span class="h-1.5 w-1.5 rounded-full bg-green-500"></span> Completed
+            </span>
+          {% elif project.status == 'CANCELLED' %}
+            <span class="inline-flex items-center gap-1 rounded-full bg-red-50 border border-red-200 px-2.5 py-0.5 text-xs font-medium text-red-700">
+              <span class="h-1.5 w-1.5 rounded-full bg-red-500"></span> Cancelled
+            </span>
+          {% elif project.status == 'ONGOING' %}
+            <span class="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+              <span class="h-1.5 w-1.5 rounded-full bg-blue-500"></span> In Progress
+            </span>
+          {% elif project.status == 'SCHED' %}
+            <span class="inline-flex items-center gap-1 rounded-full bg-purple-50 border border-purple-200 px-2.5 py-0.5 text-xs font-medium text-purple-700">
+              <span class="h-1.5 w-1.5 rounded-full bg-purple-500"></span> Scheduled
+            </span>
+          {% else %}
+            <span class="inline-flex items-center gap-1 rounded-full bg-yellow-50 border border-yellow-200 px-2.5 py-0.5 text-xs font-medium text-yellow-700">
+              <span class="h-1.5 w-1.5 rounded-full bg-yellow-500"></span> Pending/Quoted
+            </span>
+          {% endif %}
+        </dd>
+      </div>
+      <!-- Quoted Amount -->
+      <div>
+        <dt class="text-xs font-medium text-gray-500 mb-1">Quoted Amount</dt>
+        <dd class="text-sm font-medium text-gray-800">₹{{ project.quoted_amount }}</dd>
+      </div>
+      <!-- Technician -->
+      <div>
+        <dt class="text-xs font-medium text-gray-500 mb-1">Assigned Technician</dt>
+        <dd class="text-sm text-gray-800">
+          {% if project.technician %}
+            {{ project.technician.full_name }}
+          {% else %}
+            <span class="text-gray-400">Not yet assigned</span>
+          {% endif %}
+        </dd>
+      </div>
+      <!-- Start Date -->
+      {% if project.start_date %}
+      <div>
+        <dt class="text-xs font-medium text-gray-500 mb-1">Start Date</dt>
+        <dd class="text-sm text-gray-800">{{ project.start_date|date:"M d, Y" }}</dd>
+      </div>
+      {% endif %}
+      <!-- Completion Date -->
+      {% if project.completion_date %}
+      <div>
+        <dt class="text-xs font-medium text-gray-500 mb-1">Completion Date</dt>
+        <dd class="text-sm text-gray-800">{{ project.completion_date|date:"M d, Y" }}</dd>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Actions -->
+  <div class="flex flex-col-reverse sm:flex-row gap-3">
+    <a href="{% url 'customerapp:customer-dashboard' %}?tab=my-requests"
+       class="rounded border border-gray-300 px-4 py-2.5 text-center text-sm font-medium text-gray-600 hover:bg-gray-50 transition">
+      Back to Dashboard
+    </a>
+    {% if not job_request.is_converted_to_project %}
+      <a href="{% url 'customerapp:customer-edit-request' job_request_id=job_request.pk %}"
+         class="flex-1 rounded bg-gray-800 px-4 py-2.5 text-center text-sm font-medium text-white hover:bg-gray-700 active:bg-gray-900 transition">
+        Edit Request
+      </a>
+      <form method="post" action="{% url 'customerapp:customer-cancel-request' request_id=job_request.pk %}"
+            onsubmit="return confirm('Cancel this job request? This cannot be undone.')">
+        {% csrf_token %}
+        <button type="submit"
+                class="w-full rounded border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700 hover:bg-red-100 transition">
+          Cancel Request
+        </button>
+      </form>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

@@ -59,6 +59,19 @@ def tech_dashboard(request):
 
 
 @login_required()
+@role_required([User.Role.TECHNICIAN])
+@require_POST
+def technician_toggle_availability(request):
+    """Allow technicians to toggle their availability status."""
+    tech_profile, _ = TechnicianProfile.objects.get_or_create(user=request.user)
+    tech_profile.is_available = not tech_profile.is_available
+    tech_profile.save()
+    status = "available" if tech_profile.is_available else "unavailable"
+    messages.success(request, f"You are now {status} for new job assignments.")
+    return redirect("services:tech-dashboard")
+
+
+@login_required()
 def view_assignend_project_details(request, project_id):
     """View details of a specific project assigned to the technician."""
     try:

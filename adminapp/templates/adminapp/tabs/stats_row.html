@@ -1,7 +1,7 @@
 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
     <div class="rounded-lg border border-gray-200 bg-white p-4 text-center">
-        <p class="text-2xl font-bold text-gray-800">{{ stats.total_users }}</p>
-        <p class="mt-1 text-xs text-gray-500">Total Users</p>
+        <p class="text-2xl font-bold text-gray-800">{{ stats.total_admins }}</p>
+        <p class="mt-1 text-xs text-gray-500">Total Admins</p>
     </div>
     <div class="rounded-lg border border-gray-200 bg-white p-4 text-center">
         <p class="text-2xl font-bold text-emerald-600">{{ stats.active_technicians }}</p>
@@ -12,6 +12,10 @@
         <p class="mt-1 text-xs text-gray-500">Inactive Technicians</p>
     </div>
     <div class="rounded-lg border border-gray-200 bg-white p-4 text-center">
+        <p class="text-2xl font-bold text-amber-500">{{ stats.available_technicians }}</p>
+        <p class="mt-1 text-xs text-gray-500">Available Technicians</p>
+    </div>
+    <div class="rounded-lg border border-gray-200 bg-white p-4 text-center">
         <p class="text-2xl font-bold text-blue-600">{{ stats.total_services }}</p>
         <p class="mt-1 text-xs text-gray-500">Services</p>
     </div>
@@ -20,7 +24,7 @@
         <p class="mt-1 text-xs text-gray-500">Jobs</p>
     </div>
     <div class="rounded-lg border border-gray-200 bg-white p-4 text-center">
-        <p class="text-2xl font-bold text-purple-600">{{ stats.total_admins }}</p>
-        <p class="mt-1 text-xs text-gray-500">Admins</p>
+        <p class="text-2xl font-bold text-purple-600">{{ stats.total_customers }}</p>
+        <p class="mt-1 text-xs text-gray-500">Customers</p>
     </div>
 </div>

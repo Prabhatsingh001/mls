@@ -26,6 +26,7 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("is_active", True)
         extra_fields.setdefault("phone_verified", True)
+        extra_fields.setdefault("email_verified", True)
         extra_fields.setdefault("role", "ADMIN")
 
         if extra_fields.get("is_staff") is not True:
@@ -45,6 +46,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     class SignupMethod(models.TextChoices):
         EMAIL = "email", "Email"
         PHONE = "phone", "Phone"
+        GOOGLE = "google", "Google"
 
     email = models.EmailField(unique=True)
     full_name = models.CharField(max_length=255)
@@ -54,12 +56,14 @@ class User(AbstractBaseUser, PermissionsMixin):
         max_length=10, choices=SignupMethod.choices, default=SignupMethod.EMAIL
     )
     phone_verified = models.BooleanField(default=False)
-
-    # Required fields for Django Admin/Auth
+    email_verified = models.BooleanField(default=False)
+    is_blocked = models.BooleanField(default=False)  # For blacklisting users by admin
     is_active = models.BooleanField(
         default=False
     )  # Users must verify email/phone before becoming active
-    is_staff = models.BooleanField(default=False)
+    is_staff = models.BooleanField(
+        default=False
+    )  # used for promoting user to admin by superuser
     date_joined = models.DateTimeField(default=timezone.now)
 
     objects = UserManager()
@@ -109,6 +113,7 @@ class TechnicianProfile(models.Model):
         choices=VerificationStatus.choices,
         default=VerificationStatus.PENDING,
     )  # pending, verified, rejected'
+    is_available = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def get_verification_status_display(self):

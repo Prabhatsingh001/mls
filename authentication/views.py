@@ -45,6 +45,10 @@ def redirect_dashboard(request):
     return redirect("a:choose-role")
 
 
+def account_blocked(request):
+    return render(request, "account_blocked.html")
+
+
 def register(request):
     allowed_roles = dict(User.Role.choices)
     # Exclude ADMIN from self-registration
@@ -365,6 +369,7 @@ def activate(request, uidb64, token):
 
     if user is not None and account_activation_token.check_token(user, token):
         user.is_active = True
+        user.email_verified = True
         user.save()
         messages.success(request, "Email verified successfully")
         return redirect("a:login")

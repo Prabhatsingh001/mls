@@ -5,6 +5,11 @@ from . import views
 urlpatterns = [
     path("dashboard/", views.tech_dashboard, name="tech-dashboard"),
     path(
+        "toggle-availability/",
+        views.technician_toggle_availability,
+        name="toggle-availability",
+    ),
+    path(
         "project/<int:project_id>/",
         views.view_assignend_project_details,
         name="project-details",

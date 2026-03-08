@@ -1,0 +1,86 @@
+{% extends "index.html" %}
+
+{% block title %}Account Blocked — MLS{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+  <div class="w-full max-w-md text-center">
+
+    <!-- Icon -->
+    <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-50 mb-6">
+      <svg class="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round"
+              d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636"/>
+      </svg>
+    </div>
+
+    <!-- Heading -->
+    <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Account Blocked</h1>
+    <p class="text-sm sm:text-base text-gray-500 mb-8 max-w-sm mx-auto leading-relaxed">
+      Your account has been suspended due to a violation of our terms of service or unusual activity. You are currently unable to access MLS services.
+    </p>
+
+    <!-- Info Card -->
+    <div class="rounded-lg border border-gray-200 bg-white text-left p-5 sm:p-6 mb-8 space-y-4">
+      <h2 class="text-sm font-semibold text-gray-800">Why was my account blocked?</h2>
+      <ul class="space-y-3 text-sm text-gray-600">
+        <li class="flex items-start gap-2.5">
+          <svg class="h-4 w-4 mt-0.5 shrink-0 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z" clip-rule="evenodd"/>
+          </svg>
+          <span>Violation of our <strong>Terms of Service</strong> or community guidelines</span>
+        </li>
+        <li class="flex items-start gap-2.5">
+          <svg class="h-4 w-4 mt-0.5 shrink-0 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z" clip-rule="evenodd"/>
+          </svg>
+          <span>Suspicious or unauthorized activity detected on your account</span>
+        </li>
+        <li class="flex items-start gap-2.5">
+          <svg class="h-4 w-4 mt-0.5 shrink-0 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z" clip-rule="evenodd"/>
+          </svg>
+          <span>Multiple reports or complaints from other users</span>
+        </li>
+        <li class="flex items-start gap-2.5">
+          <svg class="h-4 w-4 mt-0.5 shrink-0 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z" clip-rule="evenodd"/>
+          </svg>
+          <span>Fraudulent payment activity or chargebacks</span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- What to do next -->
+    <div class="rounded-lg border border-blue-200 bg-blue-50 text-left p-5 sm:p-6 mb-8">
+      <h2 class="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-2">
+        <svg class="h-4 w-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clip-rule="evenodd"/>
+        </svg>
+        What can I do?
+      </h2>
+      <p class="text-sm text-blue-700 leading-relaxed">
+        If you believe this is a mistake, please contact our support team with your registered email address. We will review your account and get back to you within <strong>24–48 hours</strong>.
+      </p>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex flex-col sm:flex-row gap-3 justify-center">
+      <a href="mailto:support@mls.com"
+         class="rounded bg-gray-800 px-6 py-2.5 text-sm font-medium text-white text-center hover:bg-gray-700 active:bg-gray-900 transition">
+        Contact Support
+      </a>
+      <a href="{% url 'a:login' %}"
+         class="rounded border border-gray-300 bg-white px-6 py-2.5 text-sm font-medium text-gray-700 text-center hover:bg-gray-50 transition">
+        Back to Sign In
+      </a>
+    </div>
+
+    <p class="mt-8 text-xs text-gray-400">
+      Reference ID: {{ request.user.id|default:"N/A" }} &middot; If you need immediate help, email
+      <a href="mailto:support@mls.com" class="underline hover:text-gray-600">support@mls.com</a>
+    </p>
+
+  </div>
+</div>
+{% endblock %}

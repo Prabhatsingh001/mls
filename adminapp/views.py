@@ -9,6 +9,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from authentication.decorators import role_required
 from authentication.models import CustomerProfile, TechnicianProfile, User
 from services.models import Category, JobRequest, Project, Service
+from django.contrib.sessions.models import Session
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -24,13 +26,17 @@ def admin_dashboard(request):
 
     # 🔹 Optimized Stats (Single Aggregation Query)
     stats = User.objects.aggregate(
-        total_users=Count("id"),
         total_admins=Count("id", filter=Q(role=User.Role.ADMIN)),
+        total_customers=Count("id", filter=Q(role=User.Role.CUSTOMER)),
         active_technicians=Count(
             "id", filter=Q(role=User.Role.TECHNICIAN, is_active=True)
         ),
         inactive_technicians=Count(
             "id", filter=Q(role=User.Role.TECHNICIAN, is_active=False)
+        ),
+        available_technicians=Count(
+            "id",
+            filter=Q(role=User.Role.TECHNICIAN, technician_profile__is_available=True),
         ),
     )
 
@@ -43,7 +49,15 @@ def admin_dashboard(request):
     if tab == "technicians":
         technicians_qs = (
             User.objects.filter(role=User.Role.TECHNICIAN)
-            .only("id", "full_name", "email", "is_active", "date_joined")
+            .only(
+                "id",
+                "full_name",
+                "email",
+                "is_active",
+                "date_joined",
+                "technician_profile__verification_status",
+                "technician_profile__is_available",
+            )
             .order_by("-date_joined")
         )
 
@@ -122,21 +136,36 @@ def admin_dashboard(request):
     return render(request, "adminapp/admin.html", context)
 
 
+def logout_user_sessions(user):
+    sessions = Session.objects.filter(expire_date__gte=timezone.now())
+
+    for session in sessions:
+        data = session.get_decoded()
+        if data.get("_auth_user_id") == str(user.id):
+            session.delete()
+
+
 @login_required()
 @role_required([User.Role.ADMIN])
 def admin_toggle_user_active(request, user_id):
-    """Activate or deactivate a user account."""
     if request.method == "POST":
         target = get_object_or_404(User, pk=user_id)
+
         if target.pk == request.user.pk:
             messages.error(request, "You cannot deactivate your own account.")
         else:
-            target.is_active = not target.is_active
+            target.is_blocked = not target.is_blocked
             target.save()
-            status = "activated" if target.is_active else "deactivated"
+
+            if target.is_blocked:
+                logout_user_sessions(target)
+
+            status = "activated" if not target.is_blocked else "deactivated"
+
             messages.success(
                 request, f"{target.full_name}'s account has been {status}."
             )
+
     return redirect(request.META.get("HTTP_REFERER", "")) or redirect(
         "adminapp:admin-dashboard"
     )
@@ -414,6 +443,8 @@ def admin_get_requested_service_details(request, job_request_id):
     technicians = (
         User.objects.filter(
             role=User.Role.TECHNICIAN,
+            technician_profile__verification_status=TechnicianProfile.VerificationStatus.VERIFIED,
+            technician_profile__is_available=True,
             is_active=True,
         )
         .only("id", "full_name")
@@ -454,6 +485,8 @@ def admin_assign_technician(request, job_request_id):
                 User,
                 pk=technician_id,
                 role=User.Role.TECHNICIAN,
+                technician_profile__verification_status=TechnicianProfile.VerificationStatus.VERIFIED,
+                technician_profile__is_available=True,
                 is_active=True,
             )
             project.technician = technician
@@ -495,6 +528,8 @@ def admin_convert_to_project(request, job_request_id):
                 User,
                 pk=technician_id,
                 role=User.Role.TECHNICIAN,
+                technician_profile__verification_status=TechnicianProfile.VerificationStatus.VERIFIED,
+                technician_profile__is_available=True,
                 is_active=True,
             )
 
