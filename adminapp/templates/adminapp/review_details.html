@@ -59,7 +59,7 @@
       </div>
       <div>
         <dt class="font-medium text-gray-500">Base Price</dt>
-        <dd class="mt-1 text-gray-800">${{ job_request.service.base_price }}</dd>
+        <dd class="mt-1 text-gray-800">&#8377;{{ job_request.service.base_price }}</dd>
       </div>
       <div>
         <dt class="font-medium text-gray-500">Preferred Date</dt>
@@ -107,7 +107,7 @@
         {% csrf_token %}
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <div>
-            <label for="quoted_amount" class="block text-xs font-medium text-gray-600 mb-1">Quoted Amount ($) <span class="text-red-500">*</span></label>
+            <label for="quoted_amount" class="block text-xs font-medium text-gray-600 mb-1">Quoted Amount (&#8377;) <span class="text-red-500">*</span></label>
             <input type="number" step="0.01" min="0" id="quoted_amount" name="quoted_amount" required
                    placeholder="{{ job_request.service.base_price }}" value="{{ job_request.service.base_price }}"
                    class="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500">
@@ -165,7 +165,7 @@
         </div>
         <div>
           <dt class="font-medium text-gray-500">Quoted Amount</dt>
-          <dd class="mt-1 text-gray-800">${{ project.quoted_amount }}</dd>
+          <dd class="mt-1 text-gray-800">&#8377;{{ project.quoted_amount }}</dd>
         </div>
         <div>
           <dt class="font-medium text-gray-500">Technician</dt>

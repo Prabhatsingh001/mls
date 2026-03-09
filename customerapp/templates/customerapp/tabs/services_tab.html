@@ -3,9 +3,9 @@
     {% for cat in categories %}
         {% if cat.services.all %}
         <div class="mb-8">
-        <h2 class="text-lg font-semibold text-gray-800 mb-3">{{ cat.name }}</h2>
+        <h2 class="text-lg font-semibold text-gray-800 mb-3">{{ cat.name|capfirst }}</h2>
         {% if cat.description %}
-            <p class="text-sm text-gray-500 mb-4">{{ cat.description }}</p>
+            <p class="text-sm text-gray-500 mb-4">{{ cat.description|capfirst }}</p>
         {% endif %}
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -13,11 +13,11 @@
             {% if svc.is_active %}
             <div class="rounded-lg border border-gray-200 bg-white p-5 flex flex-col justify-between hover:shadow-sm transition">
                 <div>
-                <h3 class="text-sm font-semibold text-gray-800">{{ svc.title }}</h3>
+                <h3 class="text-sm font-semibold text-gray-800">{{ svc.title|capfirst }}</h3>
                 {% if svc.description %}
-                    <p class="mt-1 text-xs text-gray-500 line-clamp-2">{{ svc.description }}</p>
+                    <p class="mt-1 text-xs text-gray-500 line-clamp-2">{{ svc.description|capfirst }}</p>
                 {% endif %}
-                <p class="mt-2 text-sm font-medium text-gray-700">From ${{ svc.base_price }}</p>
+                <p class="mt-2 text-sm font-medium text-gray-700">From &#8377;{{ svc.base_price }}</p>
                 </div>
                 <button onclick="openRequestModal({{ svc.pk }}, '{{ svc.title|escapejs }}')"
                         class="mt-4 w-full rounded bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 active:bg-gray-900 transition">

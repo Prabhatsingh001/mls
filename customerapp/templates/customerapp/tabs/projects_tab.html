@@ -35,7 +35,7 @@
             <p class="mt-2 text-sm text-gray-600">{{ proj.source_request.description }}</p>
 
             <div class="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-gray-500">
-              <span><strong class="text-gray-600">Quoted:</strong> ${{ proj.quoted_amount }}</span>
+              <span><strong class="text-gray-600">Quoted:</strong> &#8377;{{ proj.quoted_amount }}</span>
               {% if proj.technician %}
                 <span><strong class="text-gray-600">Technician:</strong> {{ proj.technician.full_name }}</span>
               {% endif %}

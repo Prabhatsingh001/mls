@@ -62,7 +62,7 @@
                 </span>
               {% endif %}
             </td>
-            <td class="px-4 py-3 text-gray-600 whitespace-nowrap">${{ job.quoted_amount }}</td>
+            <td class="px-4 py-3 text-gray-600 whitespace-nowrap">&#8377;{{ job.quoted_amount }}</td>
             <td class="px-4 py-3 text-gray-500 whitespace-nowrap">{{ job.start_date|date:"M d, Y"|default:"—" }}</td>
             <td class="px-4 py-3 text-gray-500 whitespace-nowrap">{{ job.completion_date|date:"M d, Y"|default:"—" }}</td>
             <td class="px-4 py-3 text-gray-500 whitespace-nowrap">{{ job.job_request.created_at|date:"M d, Y" }}</td>

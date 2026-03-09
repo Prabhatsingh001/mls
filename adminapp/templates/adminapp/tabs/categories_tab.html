@@ -21,10 +21,10 @@
             {% for cat in categories %}
             <tr class="hover:bg-gray-50 transition">
                 <td class="px-4 py-3 text-gray-800 whitespace-nowrap font-medium">CAT-{{ cat.id }}</td>
-                <td class="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">{{ cat.name }}</td>
+                <td class="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">{{ cat.name|capfirst }}</td>
                 <td class="px-4 py-3 text-gray-600">
                     {% if cat.description %}
-                        {{ cat.description|truncatewords:30 }}
+                        {{ cat.description|truncatewords:30|capfirst }}
                     {% else %}
                         <span class="text-gray-400 italic">No description</span>
                     {% endif %}

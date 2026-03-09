@@ -20,14 +20,14 @@
     <tbody class="divide-y divide-gray-100">
         {% for svc in services %}
         <tr class="hover:bg-gray-50 transition">
-        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ svc.category.name }}</td>
+        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ svc.category.name|capfirst }}</td>
         <td class="px-4 py-3 whitespace-nowrap">
-            <p class="font-medium text-gray-800">{{ svc.title }}</p>
+            <p class="font-medium text-gray-800">{{ svc.title|capfirst }}</p>
             {% if svc.description %}
-            <p class="text-xs text-gray-400 truncate max-w-xs">{{ svc.description }}</p>
+            <p class="text-xs text-gray-400 truncate max-w-xs">{{ svc.description|capfirst|truncatewords:30 }}</p>
             {% endif %}
         </td>
-        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">${{ svc.base_price }}</td>
+        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">&#8377;{{ svc.base_price }}</td>
         <td class="px-4 py-3 text-center whitespace-nowrap">
             {% if svc.is_active %}
             <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-medium text-emerald-700">

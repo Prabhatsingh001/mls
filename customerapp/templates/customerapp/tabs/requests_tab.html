@@ -19,7 +19,7 @@
             {% for req in requests %}
             <tr class="hover:bg-gray-50 transition">
             <td class="px-4 py-3 whitespace-nowrap">
-                <a href="{% url 'customerapp:customer-request-detail' job_request_id=req.pk %}" class="font-medium text-blue-700 hover:underline">{{ req.service.title }}</a>
+                <a href="{% url 'customerapp:customer-request-detail' job_request_id=req.pk %}" class="font-medium text-blue-700 hover:underline">{{ req.service.title|title}}</a>
                 <p class="text-xs text-gray-400">{{ req.service.category.name }}</p>
             </td>
             <td class="px-4 py-3 text-gray-600 max-w-xs truncate">{{ req.description }}</td>

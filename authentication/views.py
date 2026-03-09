@@ -19,6 +19,7 @@ from .tasks import (
 )
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import force_str
+from django_ratelimit.decorators import ratelimit
 import logging
 
 logger = logging.getLogger(__name__)
@@ -320,6 +321,7 @@ def reset_password(request, uidb64, token):
         return redirect("a:login")
 
 
+@ratelimit(key="ip", rate="1/m", block=True)
 def resend_verification_email(request, email=None):
     """Resend account verification email.
 
@@ -607,6 +609,7 @@ def verify_phone_otp(request, user_id):
     return render(request, "verify_phone_otp.html", {"user": user})
 
 
+@ratelimit(key="ip", rate="1/m", block=True)
 def resend_phone_otp(request, user_id):
     """Resend a new OTP to the user's phone number.
 

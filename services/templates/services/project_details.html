@@ -75,7 +75,7 @@
         <dl class="space-y-3 text-sm">
             <div>
             <dt class="text-gray-500">Quoted Amount</dt>
-            <dd class="text-lg font-bold text-gray-800">${{ project.quoted_amount }}</dd>
+            <dd class="text-lg font-bold text-gray-800">&#8377;{{ project.quoted_amount }}</dd>
             </div>
             <div>
             <dt class="text-gray-500">Preferred Date (Customer)</dt>
@@ -143,7 +143,7 @@
         </div>
         <div>
             <dt class="text-gray-500">Base Price</dt>
-            <dd class="font-medium text-gray-800">${{ project.job_request.service.base_price }}</dd>
+            <dd class="font-medium text-gray-800">&#8377;{{ project.job_request.service.base_price }}</dd>
         </div>
         {% if project.job_request.service.description %}
         <div>

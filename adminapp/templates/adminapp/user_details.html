@@ -251,7 +251,7 @@
           <p class="text-xs text-gray-500">Category: {{ project.job_request.service.category.name }}</p>
         </div>
         <div class="text-right shrink-0">
-          <p class="text-sm font-medium text-gray-800">${{ project.quoted_amount }}</p>
+          <p class="text-sm font-medium text-gray-800">&#8377;{{ project.quoted_amount }}</p>
           {% if project.start_date %}
             <p class="text-xs text-gray-500">Start: {{ project.start_date|date:"M d, Y" }}</p>
           {% endif %}

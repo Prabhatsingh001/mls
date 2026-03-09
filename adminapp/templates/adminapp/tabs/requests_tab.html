@@ -17,9 +17,9 @@
         <tbody class="divide-y divide-gray-100">
             {% for req in requests %}
             <tr class="hover:bg-gray-50 transition">
-            <td class="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">{{ req.customer.full_name }}</td>
-            <td class="px-4 py-3 whitespace-nowrap">{{ req.service.category.name }}</td>
-            <td class="px-4 py-3 whitespace-nowrap">{{ req.service.title }}</td>
+            <td class="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">{{ req.customer.full_name|capfirst }}</td>
+            <td class="px-4 py-3 whitespace-nowrap">{{ req.service.category.name|capfirst }}</td>
+            <td class="px-4 py-3 whitespace-nowrap">{{ req.service.title|capfirst }}</td>
             <td class="px-4 py-3 text-gray-500 whitespace-nowrap">{{ req.created_at|date:"M d, Y H:i" }}</td>
             <td class="px-4 py-3 text-center whitespace-nowrap">
                 {% if req.is_converted_to_project %}
