@@ -76,5 +76,9 @@
       });
     </script>
 
+    {% if user.is_authenticated %}
+    <script src="{% static 'js/push-notifications.js' %}"></script>
+    {% endif %}
+
 </body>
 </html>

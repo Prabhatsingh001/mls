@@ -1,0 +1,342 @@
+{% extends "index.html" %}
+
+{% block title %}Manage Service Items — MLS{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl min-h-screen mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+    <a href="{% url 'adminapp:admin-dashboard' %}?tab=services"
+       class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition mb-6">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/>
+        </svg>
+        Back to Services
+    </a>
+
+    <div class="rounded-lg border border-gray-200 bg-white p-6 mb-6">
+        <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Manage Items for {{ service.title }}</h1>
+        <p class="text-sm text-gray-500 mt-1">Category: {{ service.category.name }} • Base Price: &#8377;{{ service.base_price }}</p>
+        {% if service.description %}
+        <p class="text-sm text-gray-600 mt-3">{{ service.description }}</p>
+        {% endif %}
+    </div>
+
+    <div class="rounded-lg border border-blue-200 bg-blue-50 p-6 mb-6">
+        <h2 class="text-sm font-semibold text-blue-900">Quick Start Guide (For New Admins)</h2>
+        <p class="text-sm text-blue-800 mt-2">Use this page in 3 steps: create or choose catalog items, map them to this service, then fine-tune quantity, order, and optional cost.</p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4 text-xs">
+            <div class="rounded border border-blue-200 bg-white p-3 text-blue-900">
+                <p class="font-semibold">Step 1</p>
+                <p class="mt-1">Create a reusable catalog item with image and cost.</p>
+            </div>
+            <div class="rounded border border-blue-200 bg-white p-3 text-blue-900">
+                <p class="font-semibold">Step 2</p>
+                <p class="mt-1">Add that item to this service with quantity and order.</p>
+            </div>
+            <div class="rounded border border-blue-200 bg-white p-3 text-blue-900">
+                <p class="font-semibold">Step 3</p>
+                <p class="mt-1">Update mapping values until customer view looks correct.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div class="rounded-lg border border-gray-200 bg-white p-6">
+            <h2 class="text-sm font-semibold text-gray-800 mb-1">Step 2: Add Existing Item to This Service</h2>
+            <p class="text-xs text-gray-500 mb-4">Pick an item from your catalog, set quantity and display order, and mark optional items if needed.</p>
+            <form method="post" action="{% url 'adminapp:admin-add-service-item-mapping' service_id=service.pk %}">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="sm:col-span-2">
+                        <label for="item_id" class="block text-xs font-medium text-gray-600 mb-1">Item</label>
+                        <select id="item_id" name="item_id" required
+                                class="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500">
+                            <option value="">Select item</option>
+                            {% for item in catalog_items %}
+                            <option value="{{ item.pk }}">{{ item.name }} ({{ item.item_type }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="quantity" class="block text-xs font-medium text-gray-600 mb-1">Quantity</label>
+                        <input id="quantity" name="quantity" type="number" min="1" value="1"
+                               class="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500">
+                        <p class="mt-1 text-[11px] text-gray-500">How many units of this item are used in this service.</p>
+                    </div>
+                    <div>
+                        <label for="display_order" class="block text-xs font-medium text-gray-600 mb-1">Display Order</label>
+                        <input id="display_order" name="display_order" type="number" min="0" value="0"
+                               class="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500">
+                        <p class="mt-1 text-[11px] text-gray-500">Smaller number appears earlier in customer view.</p>
+                    </div>
+                    <div>
+                        <label for="extra_cost" class="block text-xs font-medium text-gray-600 mb-1">Extra Cost (Optional)</label>
+                        <input id="extra_cost" name="extra_cost" type="number" min="0" step="0.01" placeholder="0.00"
+                               class="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500">
+                        <p class="mt-1 text-[11px] text-gray-500">Extra amount added to service price for this item only.</p>
+                    </div>
+                    <div class="flex items-center pt-6">
+                        <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+                            <input type="checkbox" name="is_optional" class="rounded border-gray-300 text-gray-800 focus:ring-gray-500">
+                            Optional item
+                        </label>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <button type="submit"
+                            class="rounded bg-gray-800 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-700 active:bg-gray-900 transition">
+                        Add to Service
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="rounded-lg border border-gray-200 bg-white p-6">
+            <h2 class="text-sm font-semibold text-gray-800 mb-1">Step 1: Create New Catalog Item</h2>
+            <p class="text-xs text-gray-500 mb-4">Catalog items are reusable across services. Add image and description so customers understand what they get.</p>
+            <form method="post" action="{% url 'adminapp:admin-create-service-item' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="sm:col-span-2">
+                        <label for="name" class="block text-xs font-medium text-gray-600 mb-1">Name</label>
+                        <input id="name" name="name" required
+                               class="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500">
+                    </div>
+                    <div>
+                        <label for="item_type" class="block text-xs font-medium text-gray-600 mb-1">Type</label>
+                        <select id="item_type" name="item_type" required
+                                class="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500">
+                            {% for value, label in item_types %}
+                            <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="unit_cost" class="block text-xs font-medium text-gray-600 mb-1">Unit Cost</label>
+                        <input id="unit_cost" name="unit_cost" type="number" min="0" step="0.01" required
+                               class="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label for="image" class="block text-xs font-medium text-gray-600 mb-1">Item Image</label>
+                        <input id="image" name="image" type="file" accept="image/*"
+                               class="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 file:mr-3 file:rounded file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-gray-700 hover:file:bg-gray-200">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label for="description" class="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                        <textarea id="description" name="description" rows="2"
+                                  class="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500"></textarea>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <button type="submit"
+                            class="rounded bg-gray-800 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-700 active:bg-gray-900 transition">
+                        Create Item
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="rounded-lg border border-gray-200 bg-white p-6 mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mb-4">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-800">Step 3: Items Included in This Service</h2>
+                <p class="text-xs text-gray-500 mt-1">Review and adjust mapping values below. This directly affects customer-facing service details.</p>
+            </div>
+            <div class="rounded border border-gray-200 bg-gray-50 px-3 py-2 text-[11px] text-gray-600">
+                Quantity = units used • Display Order = position • Optional = not mandatory • Extra Cost = add-on amount
+            </div>
+        </div>
+        {% if mappings %}
+        <div class="space-y-3">
+            {% for mapping in mappings %}
+            <details class="group rounded-lg border border-gray-200 bg-white">
+                <summary class="list-none cursor-pointer">
+                    <div class="flex items-start justify-between gap-3 rounded-lg p-4 group-open:border-b group-open:border-gray-200">
+                        <div class="flex items-start gap-3 min-w-0">
+                            <div class="h-12 w-12 shrink-0">
+                                {% if mapping.item.image %}
+                                <img src="{{ mapping.item.image.url }}" alt="{{ mapping.item.name }}" class="h-12 w-12 rounded-md border border-gray-200 object-cover">
+                                {% else %}
+                                <div class="h-12 w-12 rounded-md border border-dashed border-gray-300 text-[10px] text-gray-400 flex items-center justify-center">No image</div>
+                                {% endif %}
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-gray-800 truncate">{{ mapping.item.name }}</p>
+                                {% if mapping.item.description %}
+                                <p class="text-xs text-gray-500 mt-0.5">{{ mapping.item.description|truncatewords:16 }}</p>
+                                {% endif %}
+                                <div class="mt-2 flex flex-wrap gap-1 text-[11px]">
+                                    <span class="rounded border border-gray-200 bg-gray-50 px-2 py-0.5 text-gray-600">Qty: {{ mapping.quantity }}</span>
+                                    <span class="rounded border border-gray-200 bg-gray-50 px-2 py-0.5 text-gray-600">Order: {{ mapping.display_order }}</span>
+                                    <span class="rounded border border-gray-200 bg-gray-50 px-2 py-0.5 text-gray-600">{{ mapping.item.get_item_type_display }}</span>
+                                    {% if mapping.is_optional %}
+                                    <span class="rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-amber-700">Optional</span>
+                                    {% endif %}
+                                    {% if mapping.extra_cost %}
+                                    <span class="rounded border border-blue-200 bg-blue-50 px-2 py-0.5 text-blue-700">+ &#8377;{{ mapping.extra_cost }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <span class="shrink-0 inline-flex items-center gap-1 text-xs font-medium text-gray-600">
+                            <span class="group-open:hidden">View mapping</span>
+                            <span class="hidden group-open:inline">Hide mapping</span>
+                            <svg class="h-4 w-4 text-gray-400 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+                            </svg>
+                        </span>
+                    </div>
+                </summary>
+
+                <div class="p-4 bg-gray-50 rounded-b-lg">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                        <div class="lg:col-span-2">
+                            <form method="post" action="{% url 'adminapp:admin-update-service-item-mapping' mapping_id=mapping.pk %}" class="space-y-2 rounded-md border border-gray-200 bg-white p-3">
+                                {% csrf_token %}
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <label class="block text-[11px] text-gray-500">
+                                        <span class="mb-1 block">Quantity</span>
+                                        <input name="quantity" type="number" min="1" value="{{ mapping.quantity }}"
+                                               class="w-full rounded border border-gray-300 px-2 py-1.5 text-xs text-gray-800">
+                                    </label>
+                                    <label class="block text-[11px] text-gray-500">
+                                        <span class="mb-1 block">Display Order</span>
+                                        <input name="display_order" type="number" min="0" value="{{ mapping.display_order }}"
+                                               class="w-full rounded border border-gray-300 px-2 py-1.5 text-xs text-gray-800">
+                                    </label>
+                                </div>
+                                <label class="block text-[11px] text-gray-500">
+                                    <span class="mb-1 block">Extra Cost (Optional)</span>
+                                    <input name="extra_cost" type="number" min="0" step="0.01" value="{{ mapping.extra_cost|default:'' }}"
+                                           placeholder="Extra cost" class="w-full rounded border border-gray-300 px-2 py-1.5 text-xs text-gray-800">
+                                </label>
+                                <label class="inline-flex items-center gap-1 text-xs text-gray-700">
+                                    <input type="checkbox" name="is_optional" {% if mapping.is_optional %}checked{% endif %} class="rounded border-gray-300">
+                                    Optional
+                                </label>
+                                <div>
+                                    <button type="submit" class="w-full rounded bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700 border border-blue-200 hover:bg-blue-100 transition">
+                                        Update Mapping
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        <div>
+                            <div class="rounded-md border border-red-200 bg-red-50 p-3 h-full">
+                                <p class="text-xs font-medium text-red-800">Danger Zone</p>
+                                <p class="mt-1 text-[11px] text-red-700">Removing this will detach the item from this service only.</p>
+                                <form method="post" action="{% url 'adminapp:admin-remove-service-item-mapping' mapping_id=mapping.pk %}"
+                                      onsubmit="return confirm('Remove this item from service?')" class="mt-3">
+                                    {% csrf_token %}
+                                    <button type="submit" class="w-full rounded bg-red-100 px-3 py-2 text-xs font-medium text-red-800 border border-red-200 hover:bg-red-200 transition">
+                                        Remove from Service
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </details>
+            {% endfor %}
+        </div>
+        <p class="mt-3 text-[11px] text-gray-500">Tip: Lower display order appears first in the customer service details.</p>
+        {% else %}
+        <p class="text-sm text-gray-500">No items are mapped yet. Start by creating a catalog item, then add it to this service in Step 2.</p>
+        {% endif %}
+    </div>
+
+    <div class="rounded-lg border border-gray-200 bg-white p-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-1">Service Item Catalog</h2>
+        <p class="text-xs text-gray-500 mb-4">Update existing catalog items here. Changes apply wherever this item is used.</p>
+        {% if catalog_items %}
+        <div class="space-y-3">
+            {% for item in catalog_items %}
+            <form method="post" action="{% url 'adminapp:admin-update-service-item' item_id=item.pk %}" enctype="multipart/form-data"
+                  class="rounded-lg border border-gray-200 bg-white p-4">
+                {% csrf_token %}
+                <details class="group">
+                    <summary class="list-none cursor-pointer">
+                        <div class="flex items-center justify-between gap-3 rounded-md border border-gray-200 bg-gray-50 px-3 py-2.5 group-open:bg-white group-open:border-gray-300 transition">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="h-14 w-14 shrink-0">
+                                    {% if item.image %}
+                                    <img src="{{ item.image.url }}" alt="{{ item.name }}" class="h-14 w-14 rounded-md border border-gray-200 object-cover">
+                                    {% else %}
+                                    <div class="h-14 w-14 rounded-md border border-dashed border-gray-300 text-[10px] text-gray-400 flex items-center justify-center">No image</div>
+                                    {% endif %}
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-gray-800 truncate">{{ item.name }}</p>
+                                    <p class="text-[11px] text-gray-500">Click to view and edit details</p>
+                                </div>
+                            </div>
+                            <span class="text-xs font-medium text-gray-600 inline-flex items-center gap-1">
+                                <span class="group-open:hidden">View details</span>
+                                <span class="hidden group-open:inline">Hide details</span>
+                                <svg class="h-4 w-4 text-gray-400 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+                                </svg>
+                            </span>
+                        </div>
+                    </summary>
+
+                    <div class="mt-3 rounded-md border border-gray-200 bg-gray-50 p-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Name</label>
+                                <input name="name" value="{{ item.name }}" required
+                                       class="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-800">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Type</label>
+                                <select name="item_type" class="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800">
+                                    {% for value, label in item_types %}
+                                    <option value="{{ value }}" {% if item.item_type == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Unit Cost</label>
+                                <input name="unit_cost" type="number" min="0" step="0.01" value="{{ item.unit_cost }}" required
+                                       class="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-800">
+                            </div>
+                            <div class="flex items-end">
+                                <label class="inline-flex items-center gap-2 rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700">
+                                    <input type="checkbox" name="is_available" {% if item.is_available %}checked{% endif %} class="rounded border-gray-300">
+                                    Available
+                                </label>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Replace Image</label>
+                                <input name="image" type="file" accept="image/*"
+                                       class="w-full rounded border border-gray-300 bg-white px-3 py-2 text-xs text-gray-700 file:mr-2 file:rounded file:border-0 file:bg-gray-100 file:px-2 file:py-1 file:text-xs file:font-medium file:text-gray-700 hover:file:bg-gray-200">
+                            </div>
+                            <div class="flex items-end">
+                                <label class="inline-flex items-center gap-2 rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700">
+                                    <input type="checkbox" name="remove_image" class="rounded border-gray-300">
+                                    Remove image
+                                </label>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                                <textarea name="description" rows="3" placeholder="Description"
+                                          class="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-800">{{ item.description }}</textarea>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <button type="submit"
+                                        class="w-full rounded bg-gray-800 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-700 transition">
+                                    Update Item
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+            </form>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-500">No catalog items created yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

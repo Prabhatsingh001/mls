@@ -1,0 +1,92 @@
+{% extends "index.html" %}
+
+{% block title %}Notifications — MLS{% endblock %}
+
+{% block content %}
+<section class="max-w-3xl mx-auto px-4 py-10">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold text-gray-900">
+      Notifications
+      {% if unread_count %}
+        <span class="ml-2 inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">
+          {{ unread_count }} new
+        </span>
+      {% endif %}
+    </h1>
+    {% if unread_count %}
+      <form method="post" action="{% url 'notification:mark-all-read' %}">
+        {% csrf_token %}
+        <button type="submit"
+                class="text-sm font-medium text-gray-600 hover:text-gray-900 underline underline-offset-2 transition">
+          Mark all as read
+        </button>
+      </form>
+    {% endif %}
+  </div>
+
+  {% if notifications %}
+    <ul class="divide-y divide-gray-200 border border-gray-200 rounded-lg bg-white shadow-sm">
+      {% for n in notifications %}
+        <li class="flex items-start gap-4 px-5 py-4 {% if not n.is_read %}bg-blue-50/60{% endif %}">
+          <!-- Icon -->
+          <div class="shrink-0 mt-0.5">
+            {% if n.type == 'new_request' %}
+              <span class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-amber-100 text-amber-600">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                </svg>
+              </span>
+            {% elif n.type == 'new_technician' %}
+              <span class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-emerald-100 text-emerald-600">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+              </span>
+            {% elif n.type == 'pending_reminder' %}
+              <span class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-red-100 text-red-600">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              </span>
+            {% else %}
+              <span class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-gray-100 text-gray-500">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0"/>
+                </svg>
+              </span>
+            {% endif %}
+          </div>
+
+          <!-- Content -->
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-semibold text-gray-900">{{ n.title }}</p>
+            <p class="mt-0.5 text-sm text-gray-600">{{ n.message }}</p>
+            <p class="mt-1 text-xs text-gray-400">{{ n.created_at|timesince }} ago</p>
+          </div>
+
+          <!-- Mark-read button -->
+          {% if not n.is_read %}
+            <form method="post" action="{% url 'notification:mark-as-read' n.pk %}" class="shrink-0">
+              {% csrf_token %}
+              <button type="submit"
+                      title="Mark as read"
+                      class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                </svg>
+              </button>
+            </form>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="rounded-lg border border-gray-200 bg-white px-6 py-16 text-center shadow-sm">
+      <svg class="mx-auto h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0"/>
+      </svg>
+      <p class="mt-3 text-sm text-gray-500">No notifications yet.</p>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

@@ -2,15 +2,22 @@ import logging
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.sessions.models import Session
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from authentication.decorators import role_required
 from authentication.models import CustomerProfile, TechnicianProfile, User
-from services.models import Category, JobRequest, Project, Service
-from django.contrib.sessions.models import Session
-from django.utils import timezone
+from services.models import (
+    Category,
+    JobRequest,
+    Project,
+    Service,
+    ServiceItem,
+    ServiceItemMapping,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -384,6 +391,226 @@ def admin_toggle_service(request, service_id):
         status = "activated" if service.is_active else "deactivated"
         messages.success(request, f'Service "{service.title}" has been {status}.')
     return redirect("adminapp:admin-dashboard")
+
+
+@login_required()
+@role_required([User.Role.ADMIN])
+def admin_manage_service_items(request, service_id):
+    """Manage item mappings for a specific service and the item catalog."""
+    service = get_object_or_404(
+        Service.objects.select_related("category").prefetch_related(
+            "included_items__item"
+        ),
+        pk=service_id,
+    )
+
+    context = {
+        "service": service,
+        "mappings": ServiceItemMapping.objects.filter(service=service)
+        .select_related("item")
+        .order_by("display_order", "id"),
+        "catalog_items": ServiceItem.objects.order_by("name"),
+        "item_types": ServiceItem.ItemType.choices,
+    }
+    return render(request, "adminapp/service_items_manage.html", context)
+
+
+@login_required()
+@role_required([User.Role.ADMIN])
+def admin_create_service_item(request):
+    """Create a reusable service item for tasks/materials/tools."""
+    if request.method == "POST":
+        name = request.POST.get("name", "").strip()
+        item_type = request.POST.get("item_type", "").strip()
+        unit_cost = request.POST.get("unit_cost", "").strip()
+        description = request.POST.get("description", "").strip()
+        image = request.FILES.get("image")
+
+        if not name or not item_type or not unit_cost:
+            messages.error(request, "Name, item type, and unit cost are required.")
+        elif item_type not in ServiceItem.ItemType.values:
+            messages.error(request, "Invalid item type selected.")
+        else:
+            try:
+                ServiceItem.objects.create(
+                    name=name,
+                    item_type=item_type,
+                    image=image,
+                    unit_cost=unit_cost,
+                    description=description,
+                    is_available=True,
+                )
+                messages.success(request, f'Item "{name}" created successfully.')
+            except Exception as e:
+                messages.error(request, f"Failed to create service item: {e}")
+
+    return redirect(request.META.get("HTTP_REFERER", "") or "adminapp:admin-dashboard")
+
+
+@login_required()
+@role_required([User.Role.ADMIN])
+def admin_update_service_item(request, item_id):
+    """Update a reusable service item."""
+    item = get_object_or_404(ServiceItem, pk=item_id)
+
+    if request.method == "POST":
+        name = request.POST.get("name", "").strip()
+        item_type = request.POST.get("item_type", "").strip()
+        unit_cost = request.POST.get("unit_cost", "").strip()
+        description = request.POST.get("description", "").strip()
+        is_available = request.POST.get("is_available") == "on"
+        remove_image = request.POST.get("remove_image") == "on"
+        image = request.FILES.get("image")
+
+        if not name or not item_type or not unit_cost:
+            messages.error(request, "Name, item type, and unit cost are required.")
+        elif item_type not in ServiceItem.ItemType.values:
+            messages.error(request, "Invalid item type selected.")
+        else:
+            try:
+                item.name = name
+                item.item_type = item_type
+                item.unit_cost = unit_cost
+                item.description = description
+                item.is_available = is_available
+                if remove_image and item.image:
+                    item.image.delete(save=False)
+                if image:
+                    if item.image:
+                        item.image.delete(save=False)
+                    item.image = image
+                item.save()
+                messages.success(request, f'Item "{item.name}" updated successfully.')
+            except Exception as e:
+                messages.error(request, f"Failed to update service item: {e}")
+
+    return redirect(request.META.get("HTTP_REFERER", "") or "adminapp:admin-dashboard")
+
+
+@login_required()
+@role_required([User.Role.ADMIN])
+def admin_add_service_item_mapping(request, service_id):
+    """Attach an existing service item to a service with custom metadata."""
+    service = get_object_or_404(Service, pk=service_id)
+
+    if request.method == "POST":
+        item_id = request.POST.get("item_id", "").strip()
+        is_optional = request.POST.get("is_optional") == "on"
+        extra_cost = request.POST.get("extra_cost", "").strip() or None
+
+        try:
+            quantity = int(request.POST.get("quantity", "1").strip() or "1")
+            display_order = int(request.POST.get("display_order", "0").strip() or "0")
+            if quantity < 1 or display_order < 0:
+                raise ValueError
+        except ValueError:
+            messages.error(
+                request,
+                "Quantity must be at least 1 and display order cannot be negative.",
+            )
+            return redirect(
+                "adminapp:admin-manage-service-items", service_id=service.pk
+            )
+
+        if not item_id:
+            messages.error(request, "Please select an item to add.")
+            return redirect(
+                "adminapp:admin-manage-service-items", service_id=service.pk
+            )
+
+        item = get_object_or_404(ServiceItem, pk=item_id)
+
+        try:
+            mapping, created = ServiceItemMapping.objects.update_or_create(
+                service=service,
+                item=item,
+                defaults={
+                    "quantity": quantity,
+                    "is_optional": is_optional,
+                    "extra_cost": extra_cost,
+                    "display_order": display_order,
+                },
+            )
+            if created:
+                messages.success(
+                    request, f'Item "{mapping.item.name}" added to "{service.title}".'
+                )
+            else:
+                messages.success(
+                    request,
+                    f'Item "{mapping.item.name}" was already linked and has been updated.',
+                )
+        except Exception as e:
+            messages.error(request, f"Failed to add item to service: {e}")
+
+    return redirect("adminapp:admin-manage-service-items", service_id=service.pk)
+
+
+@login_required()
+@role_required([User.Role.ADMIN])
+def admin_update_service_item_mapping(request, mapping_id):
+    """Update quantity/cost/order metadata for an item linked to a service."""
+    mapping = get_object_or_404(
+        ServiceItemMapping.objects.select_related("service", "item"), pk=mapping_id
+    )
+
+    if request.method == "POST":
+        is_optional = request.POST.get("is_optional") == "on"
+        extra_cost = request.POST.get("extra_cost", "").strip() or None
+        try:
+            quantity = int(request.POST.get("quantity", "1").strip() or "1")
+            display_order = int(request.POST.get("display_order", "0").strip() or "0")
+            if quantity < 1 or display_order < 0:
+                raise ValueError
+        except ValueError:
+            messages.error(
+                request,
+                "Quantity must be at least 1 and display order cannot be negative.",
+            )
+            return redirect(
+                "adminapp:admin-manage-service-items", service_id=mapping.service.pk
+            )
+
+        try:
+            mapping.quantity = quantity
+            mapping.is_optional = is_optional
+            mapping.extra_cost = extra_cost
+            mapping.display_order = display_order
+            mapping.save()
+            messages.success(
+                request,
+                f'Updated mapping for "{mapping.item.name}" in "{mapping.service.title}".',
+            )
+        except Exception as e:
+            messages.error(request, f"Failed to update mapped item: {e}")
+
+    return redirect(
+        "adminapp:admin-manage-service-items", service_id=mapping.service.pk
+    )
+
+
+@login_required()
+@role_required([User.Role.ADMIN])
+def admin_remove_service_item_mapping(request, mapping_id):
+    """Remove an item mapping from a service."""
+    mapping = get_object_or_404(
+        ServiceItemMapping.objects.select_related("service", "item"), pk=mapping_id
+    )
+    service_id = mapping.service.pk
+    service_title = mapping.service.title
+
+    if request.method == "POST":
+        name = mapping.item.name
+        try:
+            mapping.delete()
+            messages.success(
+                request,
+                f'Item "{name}" removed from "{service_title}".',
+            )
+        except Exception as e:
+            messages.error(request, f"Failed to remove mapped item: {e}")
+
+    return redirect("adminapp:admin-manage-service-items", service_id=service_id)
 
 
 @login_required()

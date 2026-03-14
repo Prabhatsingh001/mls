@@ -154,6 +154,161 @@
         </dl>
     </div>
 
+    <!-- Required On-Site Materials -->
+    <div class="rounded-lg border border-gray-200 bg-white p-6 mb-6">
+        <h2 class="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+        <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/>
+        </svg>
+        Materials to Carry On-Site
+        </h2>
+        <p class="text-xs text-gray-500 mb-4">This list is derived from service material mappings.</p>
+        {% if required_materials %}
+        <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left">
+            <thead>
+            <tr class="border-b border-gray-100 text-gray-500 text-xs uppercase tracking-wide">
+                <th class="pb-2 pr-4 font-medium">Material</th>
+                <th class="pb-2 pr-4 font-medium">Image</th>
+                <th class="pb-2 pr-4 font-medium text-center">Qty</th>
+                <th class="pb-2 pr-4 font-medium text-right">Unit Cost</th>
+                <th class="pb-2 pr-4 font-medium text-right">Mapping Extra Cost</th>
+                <th class="pb-2 font-medium text-left">Notes</th>
+            </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+            {% for mapping in required_materials %}
+            <tr class="{% if mapping.is_optional %}opacity-60{% endif %}">
+                <td class="py-2.5 pr-4 font-medium text-gray-800">
+                {{ mapping.item.name }}
+                {% if mapping.is_optional %}<span class="ml-1 text-xs text-gray-400">(optional)</span>{% endif %}
+                </td>
+                <td class="py-2.5 pr-4">
+                {% if mapping.item.image %}
+                <img src="{{ mapping.item.image.url }}" alt="{{ mapping.item.name }}" class="h-10 w-10 rounded border border-gray-200 object-cover">
+                {% else %}
+                <span class="text-xs text-gray-400">No image</span>
+                {% endif %}
+                </td>
+                <td class="py-2.5 pr-4 text-center text-gray-700">{{ mapping.quantity }}</td>
+                <td class="py-2.5 pr-4 text-right text-gray-700">&#8377;{{ mapping.item.unit_cost }}</td>
+                <td class="py-2.5 pr-4 text-right text-gray-700">
+                {% if mapping.extra_cost %}&#8377;{{ mapping.extra_cost }}{% else %}&mdash;{% endif %}
+                </td>
+                <td class="py-2.5 text-left text-gray-600 text-xs">
+                {% if mapping.item.description %}{{ mapping.item.description|truncatewords:12 }}{% else %}&mdash;{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-500">No required materials are mapped for this service yet.</p>
+        {% endif %}
+    </div>
+
+    <!-- Extra Materials Needed On-Site -->
+    <div class="rounded-lg border border-gray-200 bg-white p-6 mb-6">
+        <h2 class="text-sm font-semibold text-gray-800 mb-2">Extra Materials Added by Technician</h2>
+        <p class="text-xs text-gray-500 mb-4">Log any additional materials required during repair so admin/billing can track them.</p>
+
+        {% if project.status != 'COMPLETED' and project.status != 'CANCELLED' %}
+        <form method="post" action="{% url 'services:add-project-extra-material' project.pk %}" class="rounded-lg border border-gray-200 bg-gray-50 p-4 mb-4">
+            {% csrf_token %}
+            <h3 class="text-xs font-semibold text-gray-700 mb-3 uppercase tracking-wide">Add Extra Material</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Choose from material catalog (optional)</label>
+                    <select name="catalog_item" class="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800">
+                        <option value="">Select mapped material</option>
+                        {% for material in material_catalog %}
+                        <option value="{{ material.pk }}">{{ material.name }} (&#8377;{{ material.unit_cost }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Or enter custom material name</label>
+                    <input name="material_name" type="text" placeholder="Example: 1-inch copper elbow" class="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-800">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Quantity</label>
+                    <input name="quantity" type="number" min="1" value="1" required class="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-800">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Unit Cost (optional)</label>
+                    <input name="unit_cost" type="number" min="0" step="0.01" placeholder="Auto from catalog if selected" class="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-800">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Reason / Notes</label>
+                    <input name="notes" type="text" maxlength="255" placeholder="Why this extra material was needed" class="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-800">
+                </div>
+            </div>
+            <div class="mt-3">
+                <button type="submit" class="rounded bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 transition">Add Extra Material</button>
+            </div>
+        </form>
+        {% endif %}
+
+        {% if extra_materials %}
+        <div class="space-y-3">
+            {% for extra in extra_materials %}
+            <div class="rounded-lg border border-gray-200 p-4">
+                <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
+                    <div>
+                        <p class="text-sm font-semibold text-gray-800">{{ extra.material_name }}</p>
+                        <p class="text-xs text-gray-500 mt-0.5">Added by {{ extra.added_by.full_name|default:'Technician' }} on {{ extra.created_at|date:"M d, Y · h:i A" }}</p>
+                    </div>
+                    <div class="text-sm text-gray-700">
+                        <span class="inline-flex rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs">Qty: {{ extra.quantity }}</span>
+                        <span class="inline-flex rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs ml-1">Unit: {% if extra.unit_cost %}&#8377;{{ extra.unit_cost }}{% else %}&mdash;{% endif %}</span>
+                        <span class="inline-flex rounded border border-blue-200 bg-blue-50 px-2 py-1 text-xs ml-1">Total: {% if extra.line_total %}&#8377;{{ extra.line_total }}{% else %}&mdash;{% endif %}</span>
+                    </div>
+                </div>
+
+                {% if project.status != 'COMPLETED' and project.status != 'CANCELLED' %}
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                    <form method="post" action="{% url 'services:update-project-extra-material' project.pk extra.pk %}" class="lg:col-span-2 rounded-md border border-gray-200 bg-gray-50 p-3 space-y-2">
+                        {% csrf_token %}
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[11px] text-gray-600 mb-1">Material Name</label>
+                                <input name="material_name" value="{{ extra.material_name }}" required class="w-full rounded border border-gray-300 px-2 py-1.5 text-xs text-gray-800">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-gray-600 mb-1">Quantity</label>
+                                <input name="quantity" type="number" min="1" value="{{ extra.quantity }}" required class="w-full rounded border border-gray-300 px-2 py-1.5 text-xs text-gray-800">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-gray-600 mb-1">Unit Cost</label>
+                                <input name="unit_cost" type="number" min="0" step="0.01" value="{{ extra.unit_cost|default:'' }}" class="w-full rounded border border-gray-300 px-2 py-1.5 text-xs text-gray-800">
+                            </div>
+                            <div class="sm:col-span-1">
+                                <label class="block text-[11px] text-gray-600 mb-1">Notes</label>
+                                <input name="notes" value="{{ extra.notes }}" maxlength="255" class="w-full rounded border border-gray-300 px-2 py-1.5 text-xs text-gray-800">
+                            </div>
+                        </div>
+                        <button type="submit" class="rounded bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 border border-blue-200 hover:bg-blue-100 transition">Update Extra Material</button>
+                    </form>
+
+                    <form method="post" action="{% url 'services:delete-project-extra-material' project.pk extra.pk %}" class="rounded-md border border-red-200 bg-red-50 p-3"
+                          onsubmit="return confirm('Remove this extra material entry?')">
+                        {% csrf_token %}
+                        <p class="text-xs text-red-700 mb-3">Use this if the entry was added by mistake.</p>
+                        <button type="submit" class="w-full rounded bg-red-100 px-3 py-2 text-xs font-medium text-red-800 border border-red-200 hover:bg-red-200 transition">Remove Entry</button>
+                    </form>
+                </div>
+                {% elif extra.notes %}
+                <p class="text-xs text-gray-600">Notes: {{ extra.notes }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-500">No extra materials added yet.</p>
+        {% endif %}
+    </div>
+
     <!-- Internal Notes -->
     {% if project.notes %}
     <div class="rounded-lg border border-gray-200 bg-white p-6 mb-6">

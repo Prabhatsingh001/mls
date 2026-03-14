@@ -1,5 +1,5 @@
-from django.db import models
 from django.conf import settings
+from django.db import models
 
 
 class Category(models.Model):
@@ -14,7 +14,7 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
-    
+
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = self.name.lower().replace(" ", "-")
@@ -36,6 +36,55 @@ class Service(models.Model):
 
     def __str__(self):
         return f"{self.category.name} - {self.title}"
+
+
+class ServiceItem(models.Model):
+    class ItemType(models.TextChoices):
+        TASK = "Task", "Task"
+        MATERIAL = "Material", "Material"
+        TOOL = "Tool", "Tool"
+
+    name = models.CharField(max_length=200)
+    item_type = models.CharField(max_length=20, choices=ItemType.choices)
+    image = models.ImageField(upload_to="service_items/", null=True, blank=True)
+    description = models.TextField(blank=True)
+    unit_cost = models.DecimalField(max_digits=10, decimal_places=2)
+    is_available = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.name
+
+
+class ServiceItemMapping(models.Model):
+    service = models.ForeignKey(
+        Service, on_delete=models.CASCADE, related_name="included_items"
+    )
+    item = models.ForeignKey(
+        ServiceItem, on_delete=models.CASCADE, related_name="services_included"
+    )
+    quantity = models.PositiveIntegerField(default=1)
+    is_optional = models.BooleanField(
+        default=False, help_text="Whether this item is optional for the service"
+    )
+
+    extra_cost = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Additional cost for this item beyond the base price of the service",
+    )
+
+    display_order = models.PositiveIntegerField(
+        default=0, help_text="Order of items when displaying service details"
+    )
+
+    class Meta:
+        unique_together = ("service", "item")
+        ordering = ["display_order"]
+
+    def __str__(self):
+        return f"{self.quantity} x {self.item.name} for {self.service.title}"
 
 
 class JobRequest(models.Model):
@@ -99,3 +148,54 @@ class Project(models.Model):
 
     def __str__(self):
         return f"PRJ-{self.pk}: {self.job_request.service.title}"
+
+
+class ProjectExtraMaterial(models.Model):
+    """Additional materials requested by technician during project execution."""
+
+    project = models.ForeignKey(
+        Project, on_delete=models.CASCADE, related_name="extra_materials"
+    )
+    catalog_item = models.ForeignKey(
+        ServiceItem,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="project_extra_materials",
+        limit_choices_to={"item_type": ServiceItem.ItemType.MATERIAL},
+    )
+    material_name = models.CharField(max_length=200)
+    quantity = models.PositiveIntegerField(default=1)
+    unit_cost = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True
+    )
+    notes = models.CharField(max_length=255, blank=True)
+    added_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="added_extra_materials",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def save(self, *args, **kwargs):
+        if self.catalog_item:
+            if not self.material_name:
+                self.material_name = self.catalog_item.name
+            if self.unit_cost is None:
+                self.unit_cost = self.catalog_item.unit_cost
+        super().save(*args, **kwargs)
+
+    @property
+    def line_total(self):
+        if self.unit_cost is None:
+            return None
+        return self.quantity * self.unit_cost
+
+    def __str__(self):
+        return f"Extra material for PRJ-{self.project_id}: {self.material_name}"

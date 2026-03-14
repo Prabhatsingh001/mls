@@ -10,7 +10,6 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {% for svc in cat.services.all %}
-            {% if svc.is_active %}
             <div class="rounded-lg border border-gray-200 bg-white p-5 flex flex-col justify-between hover:shadow-sm transition">
                 <div>
                 <h3 class="text-sm font-semibold text-gray-800">{{ svc.title|capfirst }}</h3>
@@ -18,13 +17,46 @@
                     <p class="mt-1 text-xs text-gray-500 line-clamp-2">{{ svc.description|capfirst }}</p>
                 {% endif %}
                 <p class="mt-2 text-sm font-medium text-gray-700">From &#8377;{{ svc.base_price }}</p>
+
+                {% with mappings=svc.included_items.all %}
+                    {% if mappings %}
+                    <details class="mt-3 rounded border border-gray-100 bg-gray-50 p-2">
+                        <summary class="cursor-pointer text-xs font-medium text-gray-700">
+                            View {{ mappings|length }} service item{{ mappings|length|pluralize }} and images
+                        </summary>
+                        <ul class="mt-3 space-y-2">
+                            {% for mapping in mappings %}
+                            <li class="flex items-start gap-2">
+                                {% if mapping.item.image %}
+                                <img
+                                    src="{{ mapping.item.image.url }}"
+                                    alt="{{ mapping.item.name }}"
+                                    class="h-10 w-10 rounded object-cover border border-gray-200"
+                                >
+                                {% else %}
+                                <div class="h-10 w-10 rounded border border-dashed border-gray-300 bg-gray-100"></div>
+                                {% endif %}
+                                <div class="min-w-0">
+                                    <p class="text-xs font-medium text-gray-700">
+                                        {{ mapping.quantity }} x {{ mapping.item.name }}
+                                        {% if mapping.is_optional %}
+                                        <span class="font-normal text-gray-500">(Optional)</span>
+                                        {% endif %}
+                                    </p>
+                                    <p class="text-[11px] text-gray-500">{{ mapping.item.get_item_type_display }}</p>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </details>
+                    {% endif %}
+                {% endwith %}
                 </div>
                 <button onclick="openRequestModal({{ svc.pk }}, '{{ svc.title|escapejs }}')"
                         class="mt-4 w-full rounded bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 active:bg-gray-900 transition">
                 Request This Service
                 </button>
             </div>
-            {% endif %}
             {% endfor %}
         </div>
         </div>

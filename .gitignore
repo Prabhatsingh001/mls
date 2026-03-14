@@ -20,6 +20,8 @@ wheels/
 venv/
 ENV/
 env/
+*.pem
+
 
 # IDE / Editor
 .vscode/

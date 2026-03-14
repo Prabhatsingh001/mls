@@ -42,6 +42,36 @@ urlpatterns = [
         views.admin_edit_service,
         name="admin-update-service",
     ),
+    path(
+        "service/<int:service_id>/items/",
+        views.admin_manage_service_items,
+        name="admin-manage-service-items",
+    ),
+    path(
+        "service-item/create/",
+        views.admin_create_service_item,
+        name="admin-create-service-item",
+    ),
+    path(
+        "service-item/<int:item_id>/update/",
+        views.admin_update_service_item,
+        name="admin-update-service-item",
+    ),
+    path(
+        "service/<int:service_id>/add-item/",
+        views.admin_add_service_item_mapping,
+        name="admin-add-service-item-mapping",
+    ),
+    path(
+        "service-item-mapping/<int:mapping_id>/update/",
+        views.admin_update_service_item_mapping,
+        name="admin-update-service-item-mapping",
+    ),
+    path(
+        "service-item-mapping/<int:mapping_id>/remove/",
+        views.admin_remove_service_item_mapping,
+        name="admin-remove-service-item-mapping",
+    ),
     path("user/<int:user_id>/", views.get_user_details, name="admin-user-details"),
     path(
         "update-tech-status/<int:user_id>/",

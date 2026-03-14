@@ -96,6 +96,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "social_django.context_processors.backends",
                 "social_django.context_processors.login_redirect",
+                "notification.context_processors.unread_notifications",
             ],
         },
     },
@@ -142,6 +143,13 @@ CELERY_BROKER_URL = "redis://:mls_redis_secret_2026@localhost:6379/0"
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_BACKEND = "django-db"
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers.DatabaseScheduler"
+CELERY_BEAT_SCHEDULE = {
+    "remind-pending-work-daily": {
+        "task": "notification.tasks.remind_pending_work",
+        "schedule": 86400.0,  # every 24 hours (in seconds)
+    },
+}
 
 EMAIL_BACKEND = config("EMAIL_BACKEND")
 EMAIL_HOST = config("EMAIL_HOST")
@@ -151,6 +159,18 @@ EMAIL_HOST_USER = config("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
 SUPPORT_EMAIL = config("SUPPORT_EMAIL")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+# ── Twilio SMS ──────────────────────────────────────────────────────
+TWILIO_ACCOUNT_SID = config("TWILIO_ACCOUNT_SID", default="")
+TWILIO_AUTH_TOKEN = config("TWILIO_AUTH_TOKEN", default="")
+TWILIO_PHONE_NUMBER = config("TWILIO_PHONE_NUMBER", default="")
+
+# ── Web Push (VAPID) ────────────────────────────────────────────────
+# Generate keys once with:  python -c "from pywebpush import webpush; from py_vapid import Vapid; v=Vapid(); v.generate_keys(); print(v.private_pem()); print(v.public_key)"
+# Or: vapid --gen
+VAPID_PUBLIC_KEY = config("VAPID_PUBLIC_KEY", cast=str).replace("\\n", "\n")  # type: ignore
+VAPID_PRIVATE_KEY = config("VAPID_PRIVATE_KEY", cast=str).replace("\\n", "\n")  # type: ignore
+VAPID_ADMIN_EMAIL = config("VAPID_ADMIN_EMAIL", default="admin@example.com")
 
 
 # Password validation

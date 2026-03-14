@@ -1,10 +1,11 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404, redirect, render
 
 from authentication.decorators import role_required
 from authentication.models import User
-from services.models import Category, JobRequest, Project, Service
+from services.models import Category, JobRequest, Project, Service, ServiceItemMapping
 
 
 @login_required()
@@ -44,7 +45,18 @@ def customer_dashboard(request):
     context = {"tab": tab, "stats": stats}
 
     if tab == "services":
-        categories = Category.objects.prefetch_related("services").all()
+        services_prefetch = Prefetch(
+            "services",
+            queryset=Service.objects.filter(is_active=True).prefetch_related(
+                Prefetch(
+                    "included_items",
+                    queryset=ServiceItemMapping.objects.select_related("item").filter(
+                        item__is_available=True
+                    ),
+                )
+            ),
+        )
+        categories = Category.objects.prefetch_related(services_prefetch).all()
         context["categories"] = categories
 
     elif tab == "my-requests":
