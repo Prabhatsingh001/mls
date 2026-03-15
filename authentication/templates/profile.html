@@ -144,6 +144,12 @@
             class="rounded bg-gray-800 px-4 py-2.5 text-sm font-medium text-white text-center hover:bg-gray-700 active:bg-gray-900 transition">
             Edit Profile
         </a>
+        {% if cust_profile %}
+        <a href="{% url 'a:add-more-address' user_id=user.pk %}"
+            class="rounded border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 text-center hover:bg-gray-50 transition">
+            Add Another Address
+        </a>
+        {% endif %}
         <a href="{% url 'a:update_password' user_id=user.pk %}"
             class="rounded border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 text-center hover:bg-gray-50 transition">
             Change Password

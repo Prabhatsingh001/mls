@@ -1,4 +1,5 @@
 from django.urls import path
+
 from . import views
 
 urlpatterns = [
@@ -29,6 +30,11 @@ urlpatterns = [
     path("logout/", views.logout, name="logout"),
     path("profile/<int:user_id>/", views.profile, name="profile"),
     path("edit-profile/<int:user_id>/", views.edit_profile, name="edit_profile"),
+    path(
+        "add-address/<int:user_id>/",
+        views.add_more_address,
+        name="add-more-address",
+    ),
     path(
         "update-password/<int:user_id>/", views.update_password, name="update_password"
     ),

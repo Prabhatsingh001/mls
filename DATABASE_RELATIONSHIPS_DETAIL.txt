@@ -1,0 +1,339 @@
+MLS Database Relationships - Detailed Explanation
+================================================
+
+This document explains each model relationship used in the current MLS codebase.
+For each relationship, you will find:
+- Cardinality
+- Direction/ownership
+- on_delete behavior
+- Practical meaning in business flow
+
+
+1) User -> TechnicianProfile
+----------------------------
+Type:
+- One-to-one (1:1)
+
+Field:
+- TechnicianProfile.user = OneToOneField(User, on_delete=CASCADE, related_name="technician_profile")
+
+Meaning:
+- A technician account has one technician profile.
+- A non-technician user may not have this row yet.
+
+Delete behavior:
+- If User is deleted, TechnicianProfile is deleted automatically (CASCADE).
+
+Why this design:
+- Keeps technician-specific data (skills, KYC images, verification status, availability) separate from base auth user fields.
+
+
+2) User -> CustomerProfile
+--------------------------
+Type:
+- One-to-one (1:1)
+
+Field:
+- CustomerProfile.user = OneToOneField(User, on_delete=CASCADE, related_name="customer_profile")
+
+Meaning:
+- A customer account has one customer profile.
+- This profile acts as parent for addresses.
+
+Delete behavior:
+- If User is deleted, CustomerProfile is deleted (CASCADE).
+
+Why this design:
+- Isolates customer-specific data and supports clean extension.
+
+
+3) CustomerProfile -> Address
+-----------------------------
+Type:
+- One-to-many (1:M)
+
+Field:
+- Address.customer = ForeignKey(CustomerProfile, on_delete=CASCADE, related_name="addresses")
+
+Meaning:
+- One customer profile can hold multiple addresses.
+- This enables future support for multiple service locations.
+
+Delete behavior:
+- Deleting CustomerProfile deletes all linked addresses (CASCADE).
+
+Why this design:
+- Supports primary and non-primary addresses while keeping customer data normalized.
+
+
+4) User -> PhoneOTP
+-------------------
+Type:
+- One-to-many (1:M)
+
+Field:
+- PhoneOTP.user = ForeignKey(User, on_delete=CASCADE, related_name="phone_otps")
+
+Meaning:
+- A user may generate multiple OTP records over time.
+- New OTP creation marks older active OTPs as used.
+
+Delete behavior:
+- Deleting User deletes OTP history (CASCADE).
+
+Why this design:
+- Maintains OTP auditability and expiry lifecycle per user.
+
+
+5) Category -> Service
+----------------------
+Type:
+- One-to-many (1:M)
+
+Field:
+- Service.category = ForeignKey(Category, on_delete=CASCADE, related_name="services")
+
+Meaning:
+- One category (for example Plumbing) can have many services.
+
+Delete behavior:
+- Deleting Category deletes all child Service rows (CASCADE).
+
+Why this design:
+- Category is a strict parent grouping unit for service catalog management.
+
+
+6) Service -> ServiceItemMapping
+--------------------------------
+Type:
+- One-to-many (1:M)
+
+Field:
+- ServiceItemMapping.service = ForeignKey(Service, on_delete=CASCADE, related_name="included_items")
+
+Meaning:
+- One service can include multiple mapped items (tasks/materials/tools).
+
+Delete behavior:
+- Deleting Service deletes all related mappings (CASCADE).
+
+Why this design:
+- Stores service composition and pricing adjustments without duplicating item definitions.
+
+
+7) ServiceItem -> ServiceItemMapping
+------------------------------------
+Type:
+- One-to-many (1:M)
+
+Field:
+- ServiceItemMapping.item = ForeignKey(ServiceItem, on_delete=CASCADE, related_name="services_included")
+
+Meaning:
+- One reusable item can be mapped into many services.
+
+Delete behavior:
+- Deleting ServiceItem deletes all mappings that reference it (CASCADE).
+
+Additional constraint:
+- unique_together = (service, item) prevents duplicate mapping of the same item to the same service.
+
+Why this design:
+- Implements a many-to-many relationship between Service and ServiceItem via an explicit through model with extra fields.
+
+
+8) User -> JobRequest (customer side)
+-------------------------------------
+Type:
+- One-to-many (1:M)
+
+Field:
+- JobRequest.customer = ForeignKey(settings.AUTH_USER_MODEL, on_delete=CASCADE, related_name="job_requests")
+
+Meaning:
+- One customer user can create many job requests.
+
+Delete behavior:
+- Deleting User deletes their job requests (CASCADE).
+
+Why this design:
+- Job requests are owned by the requester and should not exist without that owner.
+
+
+9) Service -> JobRequest
+------------------------
+Type:
+- One-to-many (1:M)
+
+Field:
+- JobRequest.service = ForeignKey(Service, on_delete=PROTECT, related_name="job_requests")
+
+Meaning:
+- Many job requests may target the same service definition.
+
+Delete behavior:
+- Service cannot be deleted if any JobRequest references it (PROTECT).
+
+Why this design:
+- Preserves historical request integrity and avoids orphaned business records.
+
+
+10) JobRequest -> Project
+-------------------------
+Type:
+- One-to-one (1:1)
+
+Field:
+- Project.job_request = OneToOneField(JobRequest, on_delete=CASCADE, related_name="project")
+
+Meaning:
+- A request can become at most one project.
+- A project always originates from exactly one request.
+
+Delete behavior:
+- Deleting JobRequest deletes its Project (CASCADE).
+
+Why this design:
+- Enforces a strict conversion model from lead/request to execution project.
+
+
+11) User -> Project (technician assignment)
+-------------------------------------------
+Type:
+- One-to-many (1:M), nullable on child
+
+Field:
+- Project.technician = ForeignKey(settings.AUTH_USER_MODEL, on_delete=SET_NULL, null=True, blank=True, related_name="assigned_projects", limit_choices_to={"role": "TECH"})
+
+Meaning:
+- One technician can be assigned multiple projects.
+- A project may temporarily have no technician.
+
+Delete behavior:
+- If assigned technician user is deleted, technician field on Project is set to NULL (SET_NULL).
+
+Why this design:
+- Keeps project record alive even when technician account is removed or unavailable.
+
+
+12) Project -> ProjectExtraMaterial
+-----------------------------------
+Type:
+- One-to-many (1:M)
+
+Field:
+- ProjectExtraMaterial.project = ForeignKey(Project, on_delete=CASCADE, related_name="extra_materials")
+
+Meaning:
+- A project can have multiple additional material entries added during execution.
+
+Delete behavior:
+- Deleting Project deletes its extra materials (CASCADE).
+
+Why this design:
+- Extra materials are execution details and should not survive beyond the project.
+
+
+13) ServiceItem -> ProjectExtraMaterial (catalog link)
+------------------------------------------------------
+Type:
+- One-to-many (1:M), nullable on child
+
+Field:
+- ProjectExtraMaterial.catalog_item = ForeignKey(ServiceItem, on_delete=SET_NULL, null=True, blank=True, related_name="project_extra_materials", limit_choices_to={"item_type": "Material"})
+
+Meaning:
+- Extra material may reference a predefined catalog item.
+- Entry can also remain as free text material if no catalog match is used.
+
+Delete behavior:
+- If catalog item is deleted, link is set to NULL (SET_NULL), but extra material entry remains.
+
+Why this design:
+- Protects historical costing records while allowing catalog cleanup.
+
+
+14) User -> ProjectExtraMaterial (added_by)
+-------------------------------------------
+Type:
+- One-to-many (1:M), nullable on child
+
+Field:
+- ProjectExtraMaterial.added_by = ForeignKey(settings.AUTH_USER_MODEL, on_delete=SET_NULL, null=True, blank=True, related_name="added_extra_materials")
+
+Meaning:
+- Tracks which user added the extra material line.
+
+Delete behavior:
+- If that user is removed, added_by becomes NULL (SET_NULL).
+
+Why this design:
+- Keeps material records while avoiding hard dependency on user lifecycle.
+
+
+15) User -> Notification
+------------------------
+Type:
+- One-to-many (1:M)
+
+Field:
+- Notification.user = ForeignKey(User, on_delete=CASCADE, related_name="notifications")
+
+Meaning:
+- One user can have many notifications.
+
+Delete behavior:
+- Deleting User deletes notifications (CASCADE).
+
+Why this design:
+- Notifications are user-scoped messages and lose relevance without the user.
+
+
+16) Notification -> Generic content object (optional)
+-----------------------------------------------------
+Type:
+- Polymorphic optional reference
+
+Fields:
+- Notification.content_type = ForeignKey(ContentType, null=True, blank=True, on_delete=CASCADE)
+- Notification.object_id = PositiveIntegerField(null=True, blank=True)
+- Notification.content_object = GenericForeignKey(content_type, object_id)
+
+Meaning:
+- A notification can point to different model types (for example a project, request, etc.) without a fixed foreign key column.
+
+Delete behavior:
+- If ContentType row is removed, related notification reference metadata is affected by CASCADE.
+- If referenced object is deleted, GenericForeignKey resolves to None.
+
+Why this design:
+- Supports one notification table for many event targets.
+
+
+17) User -> PushSubscription
+----------------------------
+Type:
+- One-to-many (1:M)
+
+Field:
+- PushSubscription.user = ForeignKey(User, on_delete=CASCADE, related_name="push_subscriptions")
+
+Meaning:
+- One user may have multiple browser/device subscriptions.
+
+Delete behavior:
+- Deleting User removes subscriptions (CASCADE).
+
+Additional constraint:
+- unique_together = (user, endpoint) prevents duplicate subscription rows per device endpoint for the same user.
+
+Why this design:
+- Supports multi-device push while keeping subscription storage clean.
+
+
+Cross-App Relationship Summary
+==============================
+- authentication app provides identity entities and profile roots.
+- services app owns request/project execution flow.
+- notification app references authentication user and optionally any business object through GenericForeignKey.
+- Most core business records use CASCADE from parent to child, except where history should survive user/catalog deletion (SET_NULL) or parent deletion must be blocked (PROTECT).

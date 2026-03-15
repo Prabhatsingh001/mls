@@ -524,6 +524,47 @@ def edit_profile(request, user_id):
 
 
 @login_required
+def add_more_address(request, user_id):
+    user = get_object_or_404(User, pk=user_id)
+
+    if request.user.pk != user.pk:
+        messages.error(request, "You can only edit your own profile.")
+        return redirect("a:profile", user_id=user.pk)
+
+    if user.role != User.Role.CUSTOMER:
+        messages.error(request, "Only customers can have multiple addresses.")
+        return redirect("a:profile", user_id=user.pk)
+
+    cust_profile, _ = CustomerProfile.objects.get_or_create(user=user)
+
+    if request.method == "POST":
+        street = request.POST.get("street", "").strip()
+        city = request.POST.get("city", "").strip()
+        state = request.POST.get("state", "").strip()
+        postal_code = request.POST.get("postal_code", "").strip()
+        country = request.POST.get("country", "").strip()
+
+        if not (street and city and state and postal_code and country):
+            messages.error(request, "All address fields are required.")
+            return redirect("a:profile", user_id=user.pk)
+
+        Address.objects.create(
+            customer=cust_profile,
+            street=street,
+            city=city,
+            state=state,
+            postal_code=postal_code,
+            country=country,
+            is_primary=False,
+        )
+
+        messages.success(request, "Address added successfully!")
+        return redirect("a:profile", user_id=user.pk)
+
+    return render(request, "add_address.html", {"user": user})
+
+
+@login_required
 def update_password(request, user_id):
     """Change a user's password while preserving the session.
 
