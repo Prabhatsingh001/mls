@@ -71,7 +71,7 @@ def remind_pending_work():
     # Group by technician to send one notification per tech
     tech_projects: dict[int, list[str]] = {}
     for project in active_projects:
-        tid = project.technician_id
+        tid = project.technician_id  # type: ignore
         if tid is None:
             # Defensive check: should not happen due to technician__isnull=False filter
             continue
@@ -92,4 +92,4 @@ def remind_pending_work():
             ),
         )
 
-    return f"Reminders sent – {unreviewed_count} unreviewed, {pending_projects_count} pending projects."
+    return f"Reminders sent - {unreviewed_count} unreviewed, {pending_projects_count} pending projects."

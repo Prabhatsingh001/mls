@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 
 from authentication.decorators import role_required
 from authentication.models import User
@@ -152,16 +153,43 @@ def customer_request_detail(request, job_request_id):
             .first()
         )
 
-    context = {"job_request": job_request, "project": project}
+    included_items = []
+    service_item_mappings = ServiceItemMapping.objects.select_related("item").filter(
+        service=job_request.service,
+        item__is_available=True,
+    )
+
+    for mapping in service_item_mappings:
+        quantity = mapping.quantity or 1
+        unit_cost = mapping.item.unit_cost
+        catalog_value = quantity * unit_cost
+        included_price = mapping.extra_cost
+
+        included_items.append(
+            {
+                "mapping": mapping,
+                "quantity": quantity,
+                "unit_cost": unit_cost,
+                "catalog_value": catalog_value,
+                "included_price": included_price,
+            }
+        )
+
+    context = {
+        "job_request": job_request,
+        "project": project,
+        "included_items": included_items,
+    }
     return render(request, "customerapp/request_details.html", context)
 
 
 @login_required()
 @role_required([User.Role.CUSTOMER])
 def customer_cancel_request(request, request_id):
+    dashboard_url = reverse("customerapp:customer-dashboard") + "?tab=my-requests"
     """Cancel a job request that hasn't been converted to a project yet."""
     if request.method != "POST":
-        return redirect("customerapp:customer-dashboard")
+        return redirect(dashboard_url)
 
     job_request = get_object_or_404(JobRequest, pk=request_id, customer=request.user)
 
@@ -174,4 +202,4 @@ def customer_cancel_request(request, request_id):
         job_request.delete()
         messages.success(request, "Job request cancelled successfully.")
 
-    return redirect("customerapp:customer-dashboard")
+    return redirect(dashboard_url)

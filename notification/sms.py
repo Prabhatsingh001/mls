@@ -18,7 +18,7 @@ def send_sms(to, body):
             from_=settings.TWILIO_PHONE_NUMBER,
             to=to,
         )
-        logger.info("SMS sent to %s – SID %s", to, message.sid)
+        logger.info("SMS sent to %s - SID %s", to, message.sid)
         return message.sid
     except Exception:
         logger.exception("Failed to send SMS to %s", to)

@@ -165,6 +165,9 @@ class ProjectExtraMaterial(models.Model):
         limit_choices_to={"item_type": ServiceItem.ItemType.MATERIAL},
     )
     material_name = models.CharField(max_length=200)
+    # material_image = models.ImageField(
+    #     upload_to="extra_materials/", null=True, blank=True
+    # )
     quantity = models.PositiveIntegerField(default=1)
     unit_cost = models.DecimalField(
         max_digits=10, decimal_places=2, null=True, blank=True
@@ -198,4 +201,4 @@ class ProjectExtraMaterial(models.Model):
         return self.quantity * self.unit_cost
 
     def __str__(self):
-        return f"Extra material for PRJ-{self.project_id}: {self.material_name}"
+        return f"Extra material for PRJ-{self.project.pk}: {self.material_name}"

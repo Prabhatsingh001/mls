@@ -42,7 +42,7 @@
                     {% endif %}
                 </td>
                 <td class="px-4 py-3 text-center whitespace-nowrap">
-                    {% if u.is_active %}
+                    {% if not u.is_blocked %}
                     <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
                         <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span> Active
                     </span>
@@ -60,25 +60,25 @@
                             {% csrf_token %}
                             <button type="submit"
                                     class="rounded px-3 py-1.5 text-xs font-medium transition
-                                    {% if u.is_active %}bg-red-50 text-red-700 border border-red-200 hover:bg-red-100{% else %}bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100{% endif %}">
-                            {% if u.is_active %}Deactivate{% else %}Activate{% endif %}
+                                    {% if not u.is_blocked %}bg-red-50 text-red-700 border border-red-200 hover:bg-red-100{% else %}bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100{% endif %}">
+                            {% if not u.is_blocked %}Deactivate{% else %}Activate{% endif %}
                             </button>
                         </form>
                         {% if u.role != "ADMIN" %}
-                        <form method="post" action="{% url 'adminapp:admin-make-admin' user_id=u.pk %}"
-                                onsubmit="return confirm('Promote {{ u.full_name }} to Admin?')">
+                        <form id="form-make-admin-{{ u.pk }}" method="post" action="{% url 'adminapp:admin-make-admin' user_id=u.pk %}">
                             {% csrf_token %}
-                            <button type="submit"
+                            <button type="button"
+                                    onclick="openUserConfirmModal('form-make-admin-{{ u.pk }}', 'Promote to Admin', 'Promote <strong>{{ u.full_name|escapejs }}</strong> to Admin? They will gain full admin access.', 'Promote', 'purple')"
                                     class="rounded px-3 py-1.5 text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition">
                             Make Admin
                             </button>
                         </form>
                         {% endif %}
                         {% if u.role == "ADMIN" %}
-                        <form method="post" action="{% url 'adminapp:admin-remove-admin' user_id=u.pk %}"
-                                onsubmit="return confirm('Demote {{ u.full_name }} from Admin?')">
+                        <form id="form-remove-admin-{{ u.pk }}" method="post" action="{% url 'adminapp:admin-remove-admin' user_id=u.pk %}">
                             {% csrf_token %}
-                            <button type="submit"
+                            <button type="button"
+                                    onclick="openUserConfirmModal('form-remove-admin-{{ u.pk }}', 'Remove Admin', 'Remove admin privileges from <strong>{{ u.full_name|escapejs }}</strong>?', 'Remove', 'red')"
                                     class="rounded px-3 py-1.5 text-xs font-medium bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition">
                             Remove Admin
                             </button>
@@ -100,3 +100,74 @@
         </div>
     {% endif %}
 </div>
+
+<!-- User Action Confirmation Modal -->
+<div id="userConfirmModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <div class="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
+        <div class="flex items-start gap-3 mb-4">
+            <div id="userConfirmIcon" class="shrink-0 flex h-9 w-9 items-center justify-center rounded-full">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/>
+                </svg>
+            </div>
+            <div>
+                <h3 id="userConfirmTitle" class="text-base font-semibold text-gray-800"></h3>
+                <p id="userConfirmMessage" class="mt-1 text-sm text-gray-500"></p>
+            </div>
+        </div>
+        <div class="flex gap-3 justify-end">
+            <button type="button" onclick="closeUserConfirmModal()"
+                    class="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition">
+                Cancel
+            </button>
+            <button id="userConfirmSubmitBtn" type="button"
+                    class="rounded px-4 py-2 text-sm font-medium text-white transition">
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let _userConfirmFormId = null;
+
+    const _userConfirmColors = {
+        purple: { icon: 'bg-purple-100 text-purple-600', btn: 'bg-purple-700 hover:bg-purple-600 active:bg-purple-800' },
+        red:    { icon: 'bg-red-100 text-red-600',       btn: 'bg-red-700 hover:bg-red-600 active:bg-red-800' },
+    };
+
+    function openUserConfirmModal(formId, title, message, confirmLabel, color) {
+        _userConfirmFormId = formId;
+        const colors = _userConfirmColors[color] || _userConfirmColors.red;
+
+        document.getElementById('userConfirmTitle').textContent = title;
+        document.getElementById('userConfirmMessage').innerHTML = message;
+
+        const icon = document.getElementById('userConfirmIcon');
+        icon.className = 'flex-shrink-0 flex h-9 w-9 items-center justify-center rounded-full ' + colors.icon;
+
+        const btn = document.getElementById('userConfirmSubmitBtn');
+        btn.textContent = confirmLabel;
+        btn.className = 'rounded px-4 py-2 text-sm font-medium text-white transition ' + colors.btn;
+
+        const modal = document.getElementById('userConfirmModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function closeUserConfirmModal() {
+        const modal = document.getElementById('userConfirmModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        _userConfirmFormId = null;
+    }
+
+    document.getElementById('userConfirmSubmitBtn').addEventListener('click', function () {
+        if (_userConfirmFormId) {
+            document.getElementById(_userConfirmFormId).submit();
+        }
+    });
+
+    document.getElementById('userConfirmModal').addEventListener('click', function (e) {
+        if (e.target === this) closeUserConfirmModal();
+    });
+</script>

@@ -1,0 +1,14 @@
+<div class="border-b border-gray-200 mb-6">
+    <nav class="flex gap-6 -mb-px" aria-label="Tabs">
+    <a href="?tab=active"
+        class="pb-3 text-sm font-medium border-b-2 transition
+        {% if tab == 'active' %}border-gray-800 text-gray-800{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}">
+        Active Projects
+    </a>
+    <a href="?tab=completed"
+        class="pb-3 text-sm font-medium border-b-2 transition
+        {% if tab == 'completed' %}border-gray-800 text-gray-800{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}">
+        Completed
+    </a>
+    </nav>
+</div>

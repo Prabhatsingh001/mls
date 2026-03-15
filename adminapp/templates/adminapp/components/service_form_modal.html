@@ -1,8 +1,11 @@
-<!-- Update Service Modal -->
-<div id="serviceModal" data-url-prefix="{% url 'adminapp:admin-update-service' service_id=0 %}" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-    <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+<!-- Create/Update Service Modal -->
+<div id="serviceModal"
+     data-create-url="{% url 'adminapp:admin-create-service' %}"
+     data-update-url-prefix="{% url 'adminapp:admin-update-service' service_id=0 %}"
+     class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <div class="w-full max-w-2xl rounded-lg bg-white p-6 shadow-xl">
     <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold text-gray-800">Update Service</h3>
+        <h3 id="serviceModalTitle" class="text-lg font-semibold text-gray-800">Update Service</h3>
         <button onclick="closeServiceModal()" class="text-gray-400 hover:text-gray-600 transition">
         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
@@ -12,7 +15,7 @@
     <form id="serviceUpdateForm" method="post" action="">
         {% csrf_token %}
 
-        <div class="space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <!-- Category select -->
         <div>
             <label for="modal_category" class="block text-xs font-medium text-gray-600 mb-1">Category</label>
@@ -43,15 +46,15 @@
                 class="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500">
         </div>
         <!-- Description -->
-        <div>
+        <div class="sm:col-span-2">
             <label for="modal_description" class="block text-xs font-medium text-gray-600 mb-1">Description</label>
-            <textarea id="modal_description" name="description" rows="3" placeholder="Brief description of the service…"
+            <textarea id="modal_description" name="description" rows="2" placeholder="Brief description of the service…"
                     class="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500 resize-none"></textarea>
         </div>
         </div>
 
         <div class="mt-5 flex gap-3">
-        <button type="submit"
+        <button id="serviceModalSubmitButton" type="submit"
                 class="flex-1 rounded bg-gray-800 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-700 active:bg-gray-900 transition">
             Update Service
         </button>
@@ -65,19 +68,36 @@
 </div>
 
 <script>
+    function openCreateServiceModal() {
+        const modal = document.getElementById('serviceModal');
+        const form = document.getElementById('serviceUpdateForm');
+
+        form.action = modal.dataset.createUrl; // set form action to create URL
+        form.reset();
+
+        document.getElementById('serviceModalTitle').textContent = 'Create New Service';
+        document.getElementById('serviceModalSubmitButton').textContent = 'Create Service';
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
     function openEditServiceModal(serviceId, serviceName, categoryId, basePrice, description) {
         // Set form action to the correct URL with the service ID
-        var urlPrefix = document.getElementById('serviceModal').dataset.urlPrefix;
-        document.getElementById('serviceUpdateForm').action = urlPrefix.replace('/0/', '/' + serviceId + '/');
+        const modal = document.getElementById('serviceModal');
+        const form = document.getElementById('serviceUpdateForm');
+        const urlPrefix = modal.dataset.updateUrlPrefix;
+        form.action = urlPrefix.replace('/0/', '/' + serviceId + '/'); //set form action to update URL with correct service ID
 
         // Populate fields with current values
+        document.getElementById('serviceModalTitle').textContent = 'Update Service';
+        document.getElementById('serviceModalSubmitButton').textContent = 'Update Service';
         document.getElementById('modal_title').value = serviceName;
         document.getElementById('modal_category').value = categoryId;
         document.getElementById('modal_base_price').value = basePrice;
         document.getElementById('modal_description').value = description || '';
         document.getElementById('modal_new_category').value = '';
 
-        const modal = document.getElementById('serviceModal');
         modal.classList.remove('hidden');
         modal.classList.add('flex');
     }

@@ -85,6 +85,60 @@
     </div>
   </div>
 
+  <!-- Included Items & Pricing Card -->
+  <div class="rounded-lg bg-white border border-gray-200 shadow-sm mb-6">
+    <div class="border-b border-gray-200 px-6 py-4">
+      <h2 class="text-sm font-semibold text-gray-800 uppercase tracking-wider">Included Items & Pricing</h2>
+    </div>
+
+    {% if included_items %}
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 text-sm">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Catalog Value</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Included Price</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 bg-white">
+          {% for row in included_items %}
+          <tr>
+            <td class="px-6 py-4">
+              <p class="font-medium text-gray-800">{{ row.mapping.item.name }}</p>
+              {% if row.mapping.is_optional %}
+              <p class="text-xs text-amber-600 mt-0.5">Optional item</p>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 text-gray-600">{{ row.mapping.item.item_type }}</td>
+            <td class="px-6 py-4 text-center text-gray-700">{{ row.quantity }}</td>
+            <td class="px-6 py-4 text-right text-gray-700">₹{{ row.unit_cost }}</td>
+            <td class="px-6 py-4 text-right text-gray-700">₹{{ row.catalog_value }}</td>
+            <td class="px-6 py-4 text-right">
+              {% if row.included_price is not None %}
+              <span class="font-medium text-gray-800">₹{{ row.included_price }}</span>
+              {% else %}
+              <span class="text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-0.5">Included</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="border-t border-gray-200 px-6 py-3 bg-gray-50">
+      <p class="text-xs text-gray-500">Included Price shows extra/additional charge configured for each mapped item. If no extra charge is set, the item is treated as included.</p>
+    </div>
+    {% else %}
+    <div class="px-6 py-5">
+      <p class="text-sm text-gray-500">No catalog items are mapped to this service yet.</p>
+    </div>
+    {% endif %}
+  </div>
+
   <!-- Project Details (if converted) -->
   {% if project %}
   <div class="rounded-lg bg-white border border-gray-200 shadow-sm mb-6">

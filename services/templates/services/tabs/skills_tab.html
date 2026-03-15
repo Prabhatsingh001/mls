@@ -1,0 +1,10 @@
+{% if tech_profile.skills %}
+<div class="mb-6">
+<h2 class="text-sm font-medium text-gray-500 mb-2">Your Skills</h2>
+<div class="flex flex-wrap gap-2">
+    {% for skill in tech_profile.skills %}
+    <span class="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">{{ skill }}</span>
+    {% endfor %}
+</div>
+</div>
+{% endif %}

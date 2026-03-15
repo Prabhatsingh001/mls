@@ -36,10 +36,10 @@
                 </td>
                 <td class="px-4 py-3 text-center whitespace-nowrap">
                     <div class="flex items-center justify-center gap-2">
-                    <form method="post" action="{% url 'adminapp:admin-delete-category' category_id=cat.pk %}"
-                            onsubmit="return confirm('Delete category &quot;{{ cat.name }}&quot;? This cannot be undone.')">
+                    <form id="form-delete-category-{{ cat.pk }}" method="post" action="{% url 'adminapp:admin-delete-category' category_id=cat.pk %}">
                         {% csrf_token %}
-                        <button type="submit"
+                        <button type="button"
+                                onclick="openCatDeleteModal('form-delete-category-{{ cat.pk }}', '{{ cat.name|escapejs }}')"
                                 class="rounded px-3 py-1.5 text-xs font-medium bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition">
                         Delete
                         </button>
@@ -66,3 +66,60 @@
     <p class="text-gray-500">No categories found.</p>
 </div>
 {% endif %}
+
+<!-- Delete Category Confirmation Modal -->
+<div id="catDeleteModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <div class="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
+        <div class="flex items-start gap-3 mb-5">
+            <div class="shrink-0 flex h-9 w-9 items-center justify-center rounded-full bg-red-100 text-red-600">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/>
+                </svg>
+            </div>
+            <div>
+                <h3 class="text-base font-semibold text-gray-800">Delete Category</h3>
+                <p id="catDeleteMessage" class="mt-1 text-sm text-gray-500"></p>
+            </div>
+        </div>
+        <div class="flex gap-3 justify-end">
+            <button type="button" onclick="closeCatDeleteModal()"
+                    class="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition">
+                Cancel
+            </button>
+            <button id="catDeleteConfirmBtn" type="button"
+                    class="rounded px-4 py-2 text-sm font-medium text-white bg-red-700 hover:bg-red-600 active:bg-red-800 transition">
+                Delete
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let _catDeleteFormId = null;
+
+    function openCatDeleteModal(formId, categoryName) {
+        _catDeleteFormId = formId;
+        document.getElementById('catDeleteMessage').innerHTML =
+            'Delete category <strong>' + categoryName + '</strong>? This cannot be undone.';
+        const modal = document.getElementById('catDeleteModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function closeCatDeleteModal() {
+        const modal = document.getElementById('catDeleteModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        _catDeleteFormId = null;
+    }
+
+    document.getElementById('catDeleteConfirmBtn').addEventListener('click', function () {
+        if (_catDeleteFormId) {
+            document.getElementById(_catDeleteFormId).submit();
+        }
+    });
+
+    document.getElementById('catDeleteModal').addEventListener('click', function (e) {
+        if (e.target === this) closeCatDeleteModal();
+    });
+</script>

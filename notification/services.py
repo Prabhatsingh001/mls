@@ -38,8 +38,8 @@ def notify_admins(type, title, message, obj=None):
     # Fire-and-forget Celery tasks for external channels
     from .tasks import send_admin_push_task, send_admin_sms_task
 
-    send_admin_sms_task.delay(admin_ids, title, message)
-    send_admin_push_task.delay(admin_ids, title, message)
+    send_admin_sms_task.delay(admin_ids, title, message)  # type: ignore
+    send_admin_push_task.delay(admin_ids, title, message)  # type: ignore
 
     return notifications
 

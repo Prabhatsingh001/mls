@@ -1,0 +1,47 @@
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+<div class="flex items-center gap-4">
+    {% if tech_profile.profile_picture %}
+    <img src="{{ tech_profile.profile_picture.url }}" alt="Profile"
+            class="h-12 w-12 sm:h-14 sm:w-14 rounded-full object-cover shrink-0">
+    {% else %}
+    <div class="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-gray-800 flex items-center justify-center shrink-0">
+        <span class="text-lg sm:text-xl font-bold text-white">{{ user.full_name|make_list|first|upper }}</span>
+    </div>
+    {% endif %}
+    <div>
+    <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Welcome back, {{ user.full_name }}!</h1>
+    <p class="mt-1 text-sm text-gray-500">Manage your assigned projects and track progress.</p>
+    </div>
+</div>
+<div class="flex items-center gap-2 self-start">
+    {% if tech_profile.verification_status == 'verified' %}
+    <div class="flex items-center gap-3">
+        <form method="post" action="{% url 'services:toggle-availability' %}" class="flex items-center gap-3">
+            {% csrf_token %}
+            <button type="submit"
+                    class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2
+                    {% if tech_profile.is_available %}bg-green-500{% else %}bg-gray-300{% endif %}"
+                    role="switch" aria-checked="{% if tech_profile.is_available %}true{% else %}false{% endif %}">
+                <span class="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out
+                    {% if tech_profile.is_available %}translate-x-5{% else %}translate-x-0{% endif %}"></span>
+            </button>
+            <span class="text-xs font-medium {% if tech_profile.is_available %}text-green-700{% else %}text-gray-500{% endif %}">
+                {% if tech_profile.is_available %}Available{% else %}Unavailable{% endif %}
+            </span>
+        </form>
+        <span class="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
+            <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
+            Verified
+        </span>
+    </div>
+    {% elif tech_profile.verification_status == 'pending' %}
+    <span class="inline-flex items-center rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-700">
+        Pending Verification
+    </span>
+    {% elif tech_profile.verification_status == 'rejected' %}
+    <span class="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700">
+        Verification Rejected
+    </span>
+    {% endif %}
+</div>
+</div>
