@@ -1,0 +1,17 @@
+- creating a view to let customer see the details of their project along with technician details so as to customer is able to contact 
+- adding a job complete logic which asks technician to upload images of the completed task 
+- generate business logic for billing and amount which needs to be taken
+- solidify form submitting and error reporting
+- through testing of the code developed so far
+- integrating the notification service and make it fully functional
+- creating different service types for the same service with different material quality so that there is varying price
+- giving the customer power to edit the material and calulate pricing on the selected material 
+- notifing customer of every step when his request gets accepted and when he pays the bill
+- drafting dispute laws and requlations on what to do when a dispute occurs and who takes the loss penalising system
+- ensuring the jobs get completed on time and everything runs on schedue thus creating a errorless reminder system
+- adding a technician rating by the customer and adding logic to update the technicians global rating
+- solidify logic of assigning technician techinician present work should not clash with the ongoing or future work
+- generating invoice and biiling system
+- auto generating a invoice and send it to the user when the work is done and the amount is paid by the customer
+- adding a feedback system and complain raising system to cater customer complains for already done service
+- adding the cost of each item and details for the user to see it cleanly before requesting for a service

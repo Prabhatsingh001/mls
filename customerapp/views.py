@@ -4,6 +4,8 @@ from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
+from auditapp.models import AuditLog
+from auditapp.utils import log_audit
 from authentication.decorators import role_required
 from authentication.models import User
 from services.models import Category, JobRequest, Project, Service, ServiceItemMapping
@@ -89,12 +91,21 @@ def customer_create_request(request):
 
     service = get_object_or_404(Service, pk=service_id, is_active=True)
 
-    JobRequest.objects.create(
+    job_request = JobRequest.objects.create(
         customer=request.user,
         service=service,
         description=description,
         site_address=site_address,
         preferred_date=preferred_date,
+    )
+
+    log_audit(
+        request,
+        category=AuditLog.Category.BUSINESS,
+        action="booking_created",
+        description=f"New job request #{job_request.pk} for '{service.title}' by {request.user.email}",
+        target=job_request,
+        metadata={"service_id": service.pk, "service_title": service.title},
     )
 
     messages.success(
@@ -199,7 +210,61 @@ def customer_cancel_request(request, request_id):
             "This request has already been converted to a project and cannot be cancelled.",
         )
     else:
+        log_audit(
+            request,
+            category=AuditLog.Category.BUSINESS,
+            action="booking_cancelled",
+            description=f"Job request #{job_request.pk} for '{job_request.service.title}' cancelled by {request.user.email}",
+            target=job_request,
+            metadata={"service_title": job_request.service.title},
+        )
         job_request.delete()
         messages.success(request, "Job request cancelled successfully.")
 
     return redirect(dashboard_url)
+
+
+@login_required()
+@role_required([User.Role.CUSTOMER])
+def customer_project_detail(request, project_id):
+    """View complete project details with technician and admin contact information."""
+    from django.conf import settings
+
+    project = get_object_or_404(
+        Project.objects.select_related("job_request__service__category", "technician"),
+        pk=project_id,
+        job_request__customer=request.user,
+    )
+
+    # Get technician profile if technician exists
+    technician_profile = None
+    if project.technician:
+        technician_profile = (
+            project.technician.technician_profile
+            if hasattr(project.technician, "technician_profile")
+            else None
+        )
+
+    # Get admin email from settings
+    admin_email = getattr(settings, "VAPID_ADMIN_EMAIL", "admin@example.com")
+
+    # Get all admins from database
+    admins = User.objects.filter(role=User.Role.ADMIN)
+
+    # Get project items (historical snapshot, not current service)
+    project_items = project.project_items.all()  # type: ignore
+
+    # Get extra materials added during execution
+    extra_materials = project.extra_materials.all()  # type: ignore
+
+    context = {
+        "project": project,
+        "job_request": project.job_request,
+        "technician": project.technician,
+        "technician_profile": technician_profile,
+        "admin_email": admin_email,
+        "admins": admins,
+        "project_items": project_items,
+        "extra_materials": extra_materials,
+    }
+    return render(request, "customerapp/project_detail.html", context)

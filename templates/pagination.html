@@ -2,7 +2,7 @@
 <nav class="mt-6 flex items-center justify-center gap-1">
 
     {% if page_obj.has_previous %}
-    <a href="?tab={{ request.GET.tab }}&page={{ page_obj.previous_page_number }}"
+    <a href="?{% for key, val in request.GET.items %}{% if key != 'page' %}{{ key }}={{ val }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}"
        class="rounded px-3 py-1.5 text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-100 transition">
         &laquo; Prev
     </a>
@@ -15,7 +15,7 @@
         </span>
 
         {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
-        <a href="?tab={{ request.GET.tab }}&page={{ num }}"
+        <a href="?{% for key, val in request.GET.items %}{% if key != 'page' %}{{ key }}={{ val }}&{% endif %}{% endfor %}page={{ num }}"
            class="rounded px-3 py-1.5 text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-100 transition">
             {{ num }}
         </a>
@@ -23,7 +23,7 @@
     {% endfor %}
 
     {% if page_obj.has_next %}
-    <a href="?tab={{ request.GET.tab }}&page={{ page_obj.next_page_number }}"
+    <a href="?{% for key, val in request.GET.items %}{% if key != 'page' %}{{ key }}={{ val }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}"
        class="rounded px-3 py-1.5 text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-100 transition">
         Next &raquo;
     </a>

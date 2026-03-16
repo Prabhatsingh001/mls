@@ -8,7 +8,7 @@
         <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div class="flex-1">
             <div class="flex items-center gap-2 mb-1">
-              <h3 class="text-sm font-semibold text-gray-800">PRJ-{{ proj.pk }}: {{ proj.source_request.service.title }}</h3>
+              <h3 class="text-sm font-semibold text-gray-800">PRJ-{{ proj.pk }}: {{ proj.job_request.service.title }}</h3>
               {% if proj.status == "PENDING" %}
                 <span class="inline-flex items-center gap-1 rounded-full bg-yellow-50 border border-yellow-200 px-2.5 py-0.5 text-xs font-medium text-yellow-700">
                   <span class="h-1.5 w-1.5 rounded-full bg-yellow-500"></span> Pending/Quoted
@@ -31,8 +31,8 @@
                 </span>
               {% endif %}
             </div>
-            <p class="text-xs text-gray-500">{{ proj.source_request.service.category.name }}</p>
-            <p class="mt-2 text-sm text-gray-600">{{ proj.source_request.description }}</p>
+            <p class="text-xs text-gray-500">{{ proj.job_request.service.category.name }}</p>
+            <p class="mt-2 text-sm text-gray-600">{{ proj.job_request.description }}</p>
 
             <div class="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-gray-500">
               <span><strong class="text-gray-600">Quoted:</strong> &#8377;{{ proj.quoted_amount }}</span>
@@ -50,7 +50,7 @@
 
           <div class="text-right shrink-0">
             <p class="text-xs text-gray-400">Site</p>
-            <p class="text-sm text-gray-600">{{ proj.source_request.site_address }}</p>
+            <p class="text-sm text-gray-600">{{ proj.job_request.site_address }}</p>
           </div>
         </div>
 
@@ -77,6 +77,16 @@
           </div>
         </div>
         {% endif %}
+
+        <!-- View Details Button -->
+        <div class="mt-4">
+          <a href="{% url 'customerapp:customer-project-detail' proj.pk %}" class="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition">
+            View Full Details
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+            </svg>
+          </a>
+        </div>
       </div>
       {% endfor %}
     </div>

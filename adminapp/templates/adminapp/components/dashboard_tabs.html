@@ -9,6 +9,7 @@
             {% elif tab == 'requests' %}Requests
             {% elif tab == 'jobs' %}Jobs
             {% elif tab == 'users' %}All Users
+            {% elif tab == 'audit-trails' %}Audit Trails
             {% else %}Dashboard
             {% endif %}
         </span>
@@ -57,6 +58,11 @@
                 {% if tab == 'users' %}bg-gray-100 text-gray-800{% else %}text-gray-500 hover:bg-gray-50 hover:text-gray-700{% endif %}">
                 All Users
             </a>
+            <a href="?tab=audit-trails"
+                class="rounded px-3 py-2 text-sm font-medium transition
+                {% if tab == 'audit-trails' %}bg-gray-100 text-gray-800{% else %}text-gray-500 hover:bg-gray-50 hover:text-gray-700{% endif %}">
+                Audit Trails
+            </a>
         </div>
     </div>
 
@@ -98,6 +104,12 @@
             {% if tab == 'users' %}border-gray-800 text-gray-800
             {% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}">
             All Users
+        </a>
+        <a href="?tab=audit-trails"
+            class="pb-3 text-sm font-medium border-b-2 transition
+            {% if tab == 'audit-trails' %}border-gray-800 text-gray-800
+            {% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}">
+            Audit Trails
         </a>
     </nav>
 </div>

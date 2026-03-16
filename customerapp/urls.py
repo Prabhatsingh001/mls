@@ -22,4 +22,9 @@ urlpatterns = [
         views.customer_cancel_request,
         name="customer-cancel-request",
     ),
+    path(
+        "project/<int:project_id>/",
+        views.customer_project_detail,
+        name="customer-project-detail",
+    ),
 ]

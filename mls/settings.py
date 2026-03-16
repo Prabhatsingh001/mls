@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     "adminapp",
     "customerapp",
     "notification",
+    "auditapp",
     "tailwind",
     "theme",
 ]

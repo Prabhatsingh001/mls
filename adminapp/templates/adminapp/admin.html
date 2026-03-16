@@ -47,5 +47,10 @@
         {% include "adminapp/tabs/users_tab.html" %}
     {% endif %}
 
+    <!-- ===== AUDIT TRAILS TAB ===== -->
+    {% if tab == "audit-trails" %}
+        {% include "adminapp/tabs/audit_trails_tab.html" %}
+    {% endif %}
+
 </div>
 {% endblock %}

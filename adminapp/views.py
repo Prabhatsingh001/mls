@@ -9,12 +9,15 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 
+from auditapp.models import AuditLog
+from auditapp.utils import log_audit
 from authentication.decorators import role_required
 from authentication.models import CustomerProfile, TechnicianProfile, User
 from services.models import (
     Category,
     JobRequest,
     Project,
+    ProjectItem,
     Service,
     ServiceItem,
     ServiceItemMapping,
@@ -151,6 +154,43 @@ def admin_dashboard(request):
         paginator = Paginator(categories_qs, 10)
         context["categories"] = paginator.get_page(page_number)
 
+    elif tab == "audit-trails":
+        audit_qs = AuditLog.objects.select_related("actor").order_by("-created_at")
+
+        category_filter = request.GET.get("category", "")
+        if category_filter and category_filter in AuditLog.Category.values:
+            audit_qs = audit_qs.filter(category=category_filter)
+
+        actor_filter = request.GET.get("actor", "")
+        if actor_filter:
+            try:
+                audit_qs = audit_qs.filter(actor_id=int(actor_filter))
+            except (ValueError, TypeError):
+                pass
+
+        date_from = request.GET.get("date_from", "")
+        date_to = request.GET.get("date_to", "")
+        if date_from:
+            audit_qs = audit_qs.filter(created_at__date__gte=date_from)
+        if date_to:
+            audit_qs = audit_qs.filter(created_at__date__lte=date_to)
+
+        action_filter = request.GET.get("action", "")
+        if action_filter:
+            audit_qs = audit_qs.filter(action__icontains=action_filter)
+
+        paginator = Paginator(audit_qs, 20)
+        context["audit_logs"] = paginator.get_page(page_number)
+        context["audit_categories"] = AuditLog.Category.choices
+        context["current_category"] = category_filter
+        context["current_actor"] = actor_filter
+        context["current_date_from"] = date_from
+        context["current_date_to"] = date_to
+        context["current_action"] = action_filter
+        context["all_users"] = User.objects.only(
+            "id", "full_name", "email"
+        ).order_by("full_name")
+
     return render(request, "adminapp/admin.html", context)
 
 
@@ -180,6 +220,15 @@ def admin_toggle_user_active(request, user_id):
                 logout_user_sessions(target)
 
             status = "activated" if not target.is_blocked else "deactivated"
+
+            log_audit(
+                request,
+                category=AuditLog.Category.ADMIN,
+                action="user_banned" if target.is_blocked else "user_unbanned",
+                description=f"Admin {request.user.email} {status} user {target.email}",
+                target=target,
+                metadata={"is_blocked": target.is_blocked},
+            )
 
             messages.success(
                 request, f"{target.full_name}'s account has been {status}."
@@ -275,6 +324,13 @@ def admin_delete_category(request, category_id):
         category = get_object_or_404(Category, pk=category_id)
         name = category.name
         try:
+            log_audit(
+                request,
+                category=AuditLog.Category.ADMIN,
+                action="category_deleted",
+                description=f"Admin {request.user.email} deleted category '{name}'",
+                metadata={"category_name": name},
+            )
             category.delete()
             messages.success(request, f'Category "{name}" has been deleted.')
         except Exception as e:
@@ -323,6 +379,13 @@ def admin_create_service(request):
                 base_price=base_price,
                 is_active=True,
             )
+            log_audit(
+                request,
+                category=AuditLog.Category.ADMIN,
+                action="service_created",
+                description=f"Admin {request.user.email} created service '{title}'",
+                metadata={"service_title": title, "base_price": str(base_price)},
+            )
             messages.success(request, f'Service "{title}" created successfully.')
         except Exception as e:
             messages.error(request, f"Failed to create service: {e}")
@@ -339,6 +402,13 @@ def admin_delete_service(request, service_id):
         try:
             service = get_object_or_404(Service, pk=service_id)
             name = str(service)
+            log_audit(
+                request,
+                category=AuditLog.Category.ADMIN,
+                action="service_deleted",
+                description=f"Admin {request.user.email} deleted service '{name}'",
+                metadata={"service_title": name},
+            )
             service.delete()
             messages.success(request, f'Service "{name}" has been deleted.')
         except Exception as e:
@@ -382,11 +452,30 @@ def admin_edit_service(request, service_id):
             return redirect(dashboard_url)
 
         try:
+            old_price = str(service.base_price)
+            old_title = service.title
             service.category = category
             service.title = title
             service.description = description
             service.base_price = base_price
             service.save()
+
+            audit_meta = {"old_title": old_title, "new_title": title}
+            action = "service_edited"
+            if old_price != str(base_price):
+                action = "price_changed"
+                audit_meta["old_price"] = old_price
+                audit_meta["new_price"] = str(base_price)
+
+            log_audit(
+                request,
+                category=AuditLog.Category.ADMIN,
+                action=action,
+                description=f"Admin {request.user.email} edited service '{title}'",
+                target=service,
+                metadata=audit_meta,
+            )
+
             messages.success(request, f'Service "{title}" updated successfully.')
         except Exception as e:
             messages.error(request, f"Failed to update service: {e}")
@@ -663,8 +752,17 @@ def admin_update_tech_status(request, user_id):
         new_status = request.POST.get("status", "")
         valid = [c[0] for c in TechnicianProfile.VerificationStatus.choices]
         if new_status in valid:
+            old_status = tech_profile.verification_status
             tech_profile.verification_status = new_status
             tech_profile.save(update_fields=["verification_status"])
+            log_audit(
+                request,
+                category=AuditLog.Category.ADMIN,
+                action="provider_status_changed",
+                description=f"Admin {request.user.email} changed {target_user.full_name}'s status from {old_status} to {new_status}",
+                target=target_user,
+                metadata={"old_status": old_status, "new_status": new_status},
+            )
             messages.success(
                 request,
                 f"{target_user.full_name}'s status updated to {tech_profile.get_verification_status_display()}.",
@@ -780,7 +878,7 @@ def admin_convert_to_project(request, job_request_id):
         else:
             status = Project.Status.PENDING
 
-        Project.objects.create(
+        project = Project.objects.create(
             job_request=job_request,
             technician=technician,
             quoted_amount=quoted_amount,
@@ -788,6 +886,27 @@ def admin_convert_to_project(request, job_request_id):
             notes=notes,
             start_date=start_date,
         )
+
+        # Copy service items to project items for historical tracking
+        service_items = (
+            ServiceItemMapping.objects.select_related("item")
+            .filter(service=job_request.service, item__is_available=True)
+            .order_by("display_order")
+        )
+
+        for mapping in service_items:
+            ProjectItem.objects.create(
+                project=project,
+                service_item=mapping.item,
+                item_name=mapping.item.name,
+                item_type=mapping.item.item_type,
+                quantity=mapping.quantity,
+                unit_cost=mapping.item.unit_cost,
+                extra_cost=mapping.extra_cost,
+                is_optional=mapping.is_optional,
+                display_order=mapping.display_order,
+            )
+
         job_request.is_converted_to_project = True
         job_request.save(update_fields=["is_converted_to_project"])
         messages.success(request, f"Request #{job_request.pk} converted to a project.")

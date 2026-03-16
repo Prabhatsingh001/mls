@@ -1,26 +1,35 @@
+import logging
+
 from django.contrib import messages
-from django.contrib.sites.shortcuts import get_current_site
-from django.db import transaction
-from django.core.exceptions import ValidationError
-from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth import (
     authenticate,
-    login as auth_login,
-    logout as auth_logout,
     update_session_auth_hash,
 )
+from django.contrib.auth import (
+    login as auth_login,
+)
+from django.contrib.auth import (
+    logout as auth_logout,
+)
 from django.contrib.auth.decorators import login_required
-from .models import User, PhoneOTP, TechnicianProfile, CustomerProfile, Address
-from .tokens import account_activation_token, password_reset_token
+from django.contrib.sites.shortcuts import get_current_site
+from django.core.exceptions import ValidationError
+from django.db import transaction
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
+from django_ratelimit.decorators import ratelimit
+
+from auditapp.models import AuditLog
+from auditapp.utils import log_audit
+
+from .models import Address, CustomerProfile, PhoneOTP, TechnicianProfile, User
 from .tasks import (
-    send_reset_password_email,
     password_reset_success_email,
+    send_reset_password_email,
     send_verification_mail,
 )
-from django.utils.http import urlsafe_base64_decode
-from django.utils.encoding import force_str
-from django_ratelimit.decorators import ratelimit
-import logging
+from .tokens import account_activation_token, password_reset_token
 
 logger = logging.getLogger(__name__)
 
@@ -123,6 +132,16 @@ def register(request):
             user.set_password(password)
             user.save()
 
+            log_audit(
+                request,
+                category=AuditLog.Category.USER,
+                action="signup",
+                description=f"New user registered: {user.email} (method: phone)",
+                target=user,
+                actor=user,
+                metadata={"signup_method": "phone", "role": role},
+            )
+
             # Generate OTP
             otp = PhoneOTP.generate_otp(user)
             # Log OTP to console (integrate SMS provider like Twilio for production)
@@ -163,6 +182,17 @@ def register(request):
             user.set_password(password)
             user.save()
             transaction.on_commit(lambda: send_verification_mail.delay(user.id))  # type: ignore
+
+            log_audit(
+                request,
+                category=AuditLog.Category.USER,
+                action="signup",
+                description=f"New user registered: {user.email} (method: email)",
+                target=user,
+                actor=user,
+                metadata={"signup_method": "email", "role": role},
+            )
+
             messages.success(
                 request,
                 "Registration successful! Please check your email to verify your account.",
@@ -180,6 +210,14 @@ def choose_role(request):
         if role in User.Role.values:
             request.user.role = role
             request.user.save()
+            log_audit(
+                request,
+                category=AuditLog.Category.USER,
+                action="role_change",
+                description=f"User {request.user.email} changed role to {role}",
+                target=request.user,
+                metadata={"new_role": role},
+            )
             return redirect("a:redirect-dashboard")
 
     return render(request, "choose_role.html")
@@ -222,6 +260,14 @@ def login(request):
 
         if user is not None:
             auth_login(request, user)
+            log_audit(
+                request,
+                category=AuditLog.Category.USER,
+                action="login",
+                description=f"User logged in: {user.email} (method: {login_method})",
+                target=user,
+                metadata={"login_method": login_method},
+            )
             return redirect("a:redirect-dashboard")
         else:
             return render(
@@ -589,6 +635,14 @@ def update_password(request, user_id):
 
         user.set_password(new_password)
         user.save()
+
+        log_audit(
+            request,
+            category=AuditLog.Category.USER,
+            action="password_change",
+            description=f"User {user.email} changed their password",
+            target=user,
+        )
 
         update_session_auth_hash(request, user)
         # send success email

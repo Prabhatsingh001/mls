@@ -202,3 +202,36 @@ class ProjectExtraMaterial(models.Model):
 
     def __str__(self):
         return f"Extra material for PRJ-{self.project.pk}: {self.material_name}"
+
+
+class ProjectItem(models.Model):
+    """
+    Snapshot of service items for a specific project.
+    Stores items at project creation to preserve historical data.
+    """
+
+    project = models.ForeignKey(
+        Project, on_delete=models.CASCADE, related_name="project_items"
+    )
+    service_item = models.ForeignKey(
+        ServiceItem,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="project_items",
+    )
+    item_name = models.CharField(max_length=200)
+    item_type = models.CharField(max_length=20, choices=ServiceItem.ItemType.choices)
+    quantity = models.PositiveIntegerField(default=1)
+    unit_cost = models.DecimalField(max_digits=10, decimal_places=2)
+    extra_cost = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True
+    )
+    is_optional = models.BooleanField(default=False)
+    display_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["display_order"]
+
+    def __str__(self):
+        return f"{self.item_name} for PRJ-{self.project.pk}"
