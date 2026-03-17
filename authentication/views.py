@@ -358,6 +358,14 @@ def reset_password(request, uidb64, token):
 
             user.set_password(new_password)
             user.save()
+            log_audit(
+                request,
+                category=AuditLog.Category.USER,
+                action="password_reset",
+                description=f"User {user.email} reset their password via email link",
+                target=user,
+                metadata={"user_id": user.pk},
+            )
             transaction.on_commit(lambda: password_reset_success_email.delay(user.id))  # type: ignore
             messages.success(request, "Password reset successfully")
             return redirect("a:login")
@@ -567,6 +575,22 @@ def edit_profile(request, user_id):
             "addresses": addresses,
         },
     )
+
+@login_required()
+def delete_account(request, user_id):
+    user = get_object_or_404(User, pk=user_id)
+
+    if request.user.pk != user.pk:
+        messages.error(request, "You can only delete your own account.")
+        return redirect("a:profile", user_id=user.pk)
+
+    if request.method == "POST":
+        auth_logout(request)
+        user.delete()
+        messages.success(request, "Your account has been deleted.")
+        return redirect("a:login")
+
+    return render(request, "confirm_delete_account.html", {"user": user})
 
 
 @login_required

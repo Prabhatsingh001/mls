@@ -1,0 +1,72 @@
+{% extends "index.html" %}
+
+{% block title %}Delete Account - MLS{% endblock %}
+
+{% block content %}
+<div class="min-h-screen px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+  <div class="max-w-xl mx-auto">
+
+    <div class="rounded-xl border border-red-200 bg-white shadow-sm overflow-hidden">
+      <div class="bg-red-50 border-b border-red-200 px-5 sm:px-6 py-4">
+        <div class="flex items-start gap-3">
+          <div class="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-full bg-red-100 text-red-600">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008Zm8.25-3.75a8.25 8.25 0 1 1-16.5 0 8.25 8.25 0 0 1 16.5 0Z"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-xl sm:text-2xl font-bold text-red-800">Delete Account</h1>
+            <p class="mt-1 text-sm text-red-700">
+              This action is permanent and cannot be undone.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-5 sm:px-6 py-5 sm:py-6">
+        <p class="text-sm sm:text-base text-gray-700 leading-relaxed">
+          You are about to delete the account for <span class="font-semibold">{{ user.full_name }}</span>
+          ({{ user.email }}).
+        </p>
+
+        <ul class="mt-4 space-y-2 text-sm text-gray-600">
+          <li class="flex items-start gap-2">
+            <span class="mt-1 h-1.5 w-1.5 rounded-full bg-red-400 shrink-0"></span>
+            Your profile and account access will be removed.
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="mt-1 h-1.5 w-1.5 rounded-full bg-red-400 shrink-0"></span>
+            You will be logged out immediately.
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="mt-1 h-1.5 w-1.5 rounded-full bg-red-400 shrink-0"></span>
+            You cannot recover this account after deletion.
+          </li>
+        </ul>
+
+        <div class="mt-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <p class="text-sm text-amber-800">
+            If you only want to stop notifications or hide your profile, consider updating your settings instead of deleting your account.
+          </p>
+        </div>
+
+        <form method="post" class="mt-6 flex flex-col sm:flex-row gap-3">
+          {% csrf_token %}
+          <button
+            type="submit"
+            class="rounded bg-red-600 px-5 py-2.5 text-sm font-medium text-white text-center hover:bg-red-700 active:bg-red-800 transition">
+            Yes, Delete My Account
+          </button>
+
+          <a
+            href="{% url 'a:profile' user_id=user.pk %}"
+            class="rounded border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 text-center hover:bg-gray-50 transition">
+            Cancel
+          </a>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

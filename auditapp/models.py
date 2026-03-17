@@ -9,6 +9,7 @@ class AuditLog(models.Model):
         USER = "USER", "User"
         BUSINESS = "BUSINESS", "Business"
         ADMIN = "ADMIN", "Admin"
+        PROJECT = "PROJECT", "Project"
 
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL,

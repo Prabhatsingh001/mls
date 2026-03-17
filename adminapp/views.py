@@ -187,9 +187,9 @@ def admin_dashboard(request):
         context["current_date_from"] = date_from
         context["current_date_to"] = date_to
         context["current_action"] = action_filter
-        context["all_users"] = User.objects.only(
-            "id", "full_name", "email"
-        ).order_by("full_name")
+        context["all_users"] = User.objects.only("id", "full_name", "email").order_by(
+            "full_name"
+        )
 
     return render(request, "adminapp/admin.html", context)
 
@@ -250,6 +250,14 @@ def admin_make_admin(request, user_id):
             target.role = User.Role.ADMIN
             target.is_staff = True
             target.save()
+            log_audit(
+                request,
+                category=AuditLog.Category.ADMIN,
+                action="user_promoted",
+                description=f"Admin {request.user.email} promoted {target.email} to admin",
+                target=target,
+                metadata={"new_role": target.role},
+            )
             messages.success(request, f"{target.full_name} has been promoted to Admin.")
     return redirect(request.META.get("HTTP_REFERER", "")) or redirect(dashboard_url)
 
@@ -271,6 +279,14 @@ def admin_remove_admin(request, user_id):
             target.role = User.Role.CUSTOMER  # Default to customer role
             target.is_staff = False
             target.save()
+            log_audit(
+                request,
+                category=AuditLog.Category.ADMIN,
+                action="user_demoted",
+                description=f"Admin {request.user.email} demoted {target.email} from admin",
+                target=target,
+                metadata={"old_role": User.Role.ADMIN, "new_role": target.role},
+            )
             messages.success(
                 request, f"{target.full_name} has been demoted from Admin."
             )
@@ -831,6 +847,14 @@ def admin_assign_technician(request, job_request_id):
             )
             project.technician = technician
             project.save(update_fields=["technician"])
+            log_audit(
+                request=request,
+                category=AuditLog.Category.ADMIN,
+                action="technician_assigned",
+                description=f"Admin {request.user.email} assigned technician {technician.full_name} to project PRJ-{project.pk}",
+                target=project,
+                metadata={"technician_id": technician.pk, "project_id": project.pk},
+            )
             messages.success(
                 request,
                 f"{technician.full_name} assigned to PRJ-{project.pk}.",
@@ -909,6 +933,14 @@ def admin_convert_to_project(request, job_request_id):
 
         job_request.is_converted_to_project = True
         job_request.save(update_fields=["is_converted_to_project"])
+        log_audit(
+            request=request,
+            category=AuditLog.Category.ADMIN,
+            action="request_converted_to_project",
+            description=f"Admin {request.user.email} converted request #{job_request.pk} to project PRJ-{project.pk}",
+            target=project,
+            metadata={"job_request_id": job_request.pk, "project_id": project.pk},
+        )
         messages.success(request, f"Request #{job_request.pk} converted to a project.")
     return redirect("adminapp:admin-review-details", job_request_id=job_request_id)
 

@@ -9,6 +9,7 @@ from .models import (
     Service,
     ServiceItem,
     ServiceItemMapping,
+    ProjectItem,
 )
 
 
@@ -142,3 +143,19 @@ class ProjectExtraMaterialAdmin(admin.ModelAdmin):
         "project__job_request__service__title",
     )
     autocomplete_fields = ("project", "catalog_item", "added_by")
+
+
+@admin.register(ServiceItemMapping)
+class ServiceItemMappingAdmin(admin.ModelAdmin):
+    list_display = ("service", "item", "quantity", "is_optional", "extra_cost")
+    list_filter = ("service", "is_optional")
+    search_fields = ("service__title", "item__name")
+    autocomplete_fields = ("service", "item")
+
+
+@admin.register(ProjectItem)
+class ProjectItemAdmin(admin.ModelAdmin):
+    list_display = ("project", "item_name", "quantity", "unit_cost")
+    list_filter = ("project",)
+    search_fields = ("project__id", "item_name")
+    autocomplete_fields = ("project", "service_item")

@@ -154,6 +154,10 @@
             class="rounded border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 text-center hover:bg-gray-50 transition">
             Change Password
         </a>
+        <a href="{% url 'a:delete_account' user_id=user.pk %}"
+          class="rounded border border-red-300 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700 text-center hover:bg-red-100 transition">
+          Delete Account
+        </a>
     </div>
 
   </div>

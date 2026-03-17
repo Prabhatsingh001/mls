@@ -10,6 +10,8 @@ from authentication.decorators import role_required
 from authentication.models import TechnicianProfile, User
 
 from .models import Project, ProjectExtraMaterial, ServiceItem, ServiceItemMapping
+from auditapp.utils import log_audit
+from auditapp.models import AuditLog
 
 
 @login_required()
@@ -288,6 +290,15 @@ def update_project_status(request, project_id):
         project.completion_date = timezone.now().date()
         project.job_request.is_project_completed = True
     project.save()
+
+    log_audit(
+        request,
+        category=AuditLog.Category.PROJECT,
+        action="status_updated",
+        description=f"Technician {request.user.email} updated project PRJ-{project.pk} status to {new_status}",
+        target=project,
+        metadata={"new_status": new_status},
+    )
 
     label = dict(Project.Status.choices).get(new_status, new_status)
     messages.success(request, f"Project marked as {label}.")

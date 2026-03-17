@@ -39,4 +39,5 @@ urlpatterns = [
         "update-password/<int:user_id>/", views.update_password, name="update_password"
     ),
     path("choose-role/", views.choose_role, name="choose-role"),
+    path("delete-account/<int:user_id>/", views.delete_account, name="delete_account"),
 ]
