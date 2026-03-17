@@ -1,7 +1,10 @@
+from datetime import timedelta
+
 from celery import shared_task
+from django.utils import timezone
 
 from notification.models import Notification, PushSubscription
-from notification.services import create_notification, notify_admins
+from notification.services import notify_admins, notify_user
 from services.models import Project
 
 
@@ -22,6 +25,16 @@ def send_admin_push_task(admin_ids, title, message):
     from notification.push import send_push
 
     subs = PushSubscription.objects.filter(user_id__in=admin_ids)
+    if subs.exists():
+        send_push(subs, title, message)
+
+
+@shared_task
+def send_user_push_task(user_id, title, message):
+    """Send browser push notification to one user, if subscribed."""
+    from notification.push import send_push
+
+    subs = PushSubscription.objects.filter(user_id=user_id)
     if subs.exists():
         send_push(subs, title, message)
 
@@ -79,7 +92,7 @@ def remind_pending_work():
         tech_projects.setdefault(tid, []).append(label)
 
     for tech_id, labels in tech_projects.items():
-        create_notification(
+        notify_user(
             user=None,
             user_id=tech_id,
             type=Notification.Type.PENDING_REMINDER,
@@ -90,6 +103,28 @@ def remind_pending_work():
                 + ("…" if len(labels) > 5 else "")
                 + "."
             ),
+        )
+
+    # ── Customer job reminders ──────────────────────────────────────
+    today = timezone.localdate()
+    tomorrow = today + timedelta(days=1)
+    upcoming_projects = Project.objects.filter(
+        status=Project.Status.SCHEDULED,
+        start_date__range=[today, tomorrow],
+    ).select_related("job_request__customer", "job_request__service", "technician")
+
+    for project in upcoming_projects:
+        day_label = "today" if project.start_date == today else "tomorrow"
+        tech_label = project.technician.full_name if project.technician else "our team"
+        notify_user(
+            user=project.job_request.customer,
+            type=Notification.Type.JOB_REMINDER,
+            title="Upcoming Service Reminder",
+            message=(
+                f"Reminder: your '{project.job_request.service.title}' service is "
+                f"scheduled for {project.start_date} ({day_label}) with {tech_label}."
+            ),
+            obj=project,
         )
 
     return f"Reminders sent - {unreviewed_count} unreviewed, {pending_projects_count} pending projects."

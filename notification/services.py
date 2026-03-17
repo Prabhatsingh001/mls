@@ -7,10 +7,46 @@ def create_notification(user, type, title, message, obj=None, user_id=None):
     """Create a single in-app notification. Pass either *user* or *user_id*."""
     if user_id is not None and user is None:
         user = User.objects.get(pk=user_id)
+    if user is None:
+        raise ValueError("Either user or user_id must be provided")
     notification = Notification.objects.create(
         user=user, type=type, title=title, message=message, content_object=obj
     )
     return notification
+
+
+def notify_user(user, type, title, message, obj=None, user_id=None, send_push=True):
+    """Create an in-app notification for one user and optionally trigger push."""
+    notification = create_notification(
+        user=user,
+        user_id=user_id,
+        type=type,
+        title=title,
+        message=message,
+        obj=obj,
+    )
+
+    if send_push:
+        from . import tasks as notification_tasks
+
+        notification_tasks.send_user_push_task.delay(  # type: ignore[attr-defined]
+            notification.user.pk, title, message
+        )
+
+    return notification
+
+
+def notify_payment_received(user, amount=None, obj=None, user_id=None):
+    """Notify a user after a successful payment event."""
+    amount_text = f" of Rs. {amount}" if amount is not None else ""
+    return notify_user(
+        user=user,
+        user_id=user_id,
+        type=Notification.Type.PAYMENT_RECEIVED,
+        title="Payment Received",
+        message=f"Your payment{amount_text} was received successfully.",
+        obj=obj,
+    )
 
 
 def notify_admins(type, title, message, obj=None):

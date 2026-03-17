@@ -955,8 +955,22 @@ def admin_update_project_status(request, project_id):
         new_status = request.POST.get("status", "")
         valid_statuses = [c[0] for c in Project.Status.choices]
         if new_status in valid_statuses:
+            update_fields = ["status"]
             project.status = new_status
-            project.save(update_fields=["status"])
+            if new_status == Project.Status.ONGOING and not project.start_date:
+                project.start_date = timezone.now().date()
+                update_fields.append("start_date")
+            if new_status == Project.Status.COMPLETED:
+                project.completion_date = timezone.now().date()
+                update_fields.append("completion_date")
+                if not project.job_request.is_project_completed:
+                    project.job_request.is_project_completed = True
+                    project.job_request.save(update_fields=["is_project_completed"])
+            elif project.job_request.is_project_completed:
+                project.job_request.is_project_completed = False
+                project.job_request.save(update_fields=["is_project_completed"])
+
+            project.save(update_fields=update_fields)
             messages.success(
                 request,
                 f"Project PRJ-{project.pk} status updated to {project.get_status_display()}.",

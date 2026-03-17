@@ -6,12 +6,12 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from auditapp.models import AuditLog
+from auditapp.utils import log_audit
 from authentication.decorators import role_required
 from authentication.models import TechnicianProfile, User
 
 from .models import Project, ProjectExtraMaterial, ServiceItem, ServiceItemMapping
-from auditapp.utils import log_audit
-from auditapp.models import AuditLog
 
 
 @login_required()
@@ -289,6 +289,7 @@ def update_project_status(request, project_id):
     elif new_status == Project.Status.COMPLETED:
         project.completion_date = timezone.now().date()
         project.job_request.is_project_completed = True
+        project.job_request.save(update_fields=["is_project_completed"])
     project.save()
 
     log_audit(

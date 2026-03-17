@@ -6,19 +6,23 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
+from django.core.paginator import Paginator
 
 from .models import Notification, PushSubscription
 
 
-@login_required
+@login_required()
 def notification_list(request):
     """Show all notifications for the logged-in user."""
     notifications = Notification.objects.filter(user=request.user)
     unread_count = notifications.filter(is_read=False).count()
+    paginator = Paginator(notifications, 20)  # Show 20 notifications per page
+    page_number = request.GET.get("page", 1)
+    page_obj = paginator.get_page(page_number)
     return render(
         request,
         "notification/list.html",
-        {"notifications": notifications[:50], "unread_count": unread_count},
+        {"notifications": page_obj, "unread_count": unread_count},
     )
 
 
