@@ -22,6 +22,10 @@ from django.urls import include, path
 
 from authentication.views import index
 
+handler404 = "authentication.views.error_404"
+handler403 = "authentication.views.error_403"
+handler500 = "authentication.views.error_500"
+
 urlpatterns = [
     path("", index, name="index"),
     path("admin/", admin.site.urls),

@@ -576,6 +576,7 @@ def edit_profile(request, user_id):
         },
     )
 
+
 @login_required()
 def delete_account(request, user_id):
     user = get_object_or_404(User, pk=user_id)
@@ -750,3 +751,19 @@ def resend_phone_otp(request, user_id):
 
     messages.success(request, "A new OTP has been sent to your phone number.")
     return redirect("a:verify-phone-otp", user_id=user.pk)
+
+
+# Error Handlers
+def error_404(request, exception):
+    """Custom 404 error handler."""
+    return render(request, "error/404_error.html", status=404)
+
+
+def error_403(request, exception):
+    """Custom 403 error handler."""
+    return render(request, "error/403_error.html", status=403)
+
+
+def error_500(request):
+    """Custom 500 error handler."""
+    return render(request, "error/500_error.html", status=500)

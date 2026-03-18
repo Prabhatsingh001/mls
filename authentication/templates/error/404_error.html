@@ -1,0 +1,42 @@
+{% extends "index.html" %}
+
+{% block title %}Page Not Found — MLS{% endblock %}
+
+{% block content %}
+<div class="min-h-[70vh] flex items-center justify-center px-4 sm:px-6 lg:px-8 py-16">
+  <div class="text-center max-w-md">
+    <!-- Error Code -->
+    <div class="relative inline-block mb-6">
+      <span class="text-8xl sm:text-9xl font-bold text-gray-100 select-none">404</span>
+      <div class="absolute inset-0 flex items-center justify-center">
+        <svg class="h-16 w-16 sm:h-20 sm:w-20 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- Message -->
+    <h1 class="text-xl sm:text-2xl font-bold text-gray-800 mb-2">Page not found</h1>
+    <p class="text-sm sm:text-base text-gray-500 leading-relaxed mb-8">
+      Sorry, the page you're looking for doesn't exist or has been moved.
+    </p>
+
+    <!-- Actions -->
+    <div class="flex flex-col sm:flex-row justify-center gap-3">
+      <a href="/"
+         class="rounded bg-gray-800 px-6 py-2.5 text-sm font-medium text-white hover:bg-gray-700 active:bg-gray-900 transition">
+        Go to Homepage
+      </a>
+      <button onclick="history.back()"
+              class="rounded border border-gray-300 bg-white px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+        Go Back
+      </button>
+    </div>
+
+    <!-- Help Link -->
+    <p class="mt-8 text-xs text-gray-400">
+      Need help? <a href="mailto:support@mls.com" class="text-gray-600 hover:text-gray-800 hover:underline">Contact support</a>
+    </p>
+  </div>
+</div>
+{% endblock %}
