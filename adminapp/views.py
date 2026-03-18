@@ -13,6 +13,7 @@ from auditapp.models import AuditLog
 from auditapp.utils import log_audit
 from authentication.decorators import role_required
 from authentication.models import CustomerProfile, TechnicianProfile, User
+from customerapp.models import Feedback
 from services.models import (
     Category,
     JobRequest,
@@ -153,6 +154,16 @@ def admin_dashboard(request):
         )
         paginator = Paginator(categories_qs, 10)
         context["categories"] = paginator.get_page(page_number)
+
+    elif tab == "feedbacks":
+        feedbacks_qs = (
+            Feedback.objects.select_related(
+                "customer", "project__job_request__service", "project__technician"
+            )
+            .order_by("-created_at")
+        )
+        paginator = Paginator(feedbacks_qs, 10)
+        context["feedbacks"] = paginator.get_page(page_number)
 
     elif tab == "audit-trails":
         audit_qs = AuditLog.objects.select_related("actor").order_by("-created_at")
@@ -437,7 +448,7 @@ def admin_delete_service(request, service_id):
 
 @login_required()
 @role_required([User.Role.ADMIN])
-def admin_edit_service(request, service_id):
+def admin_update_service(request, service_id):
     """Edit an existing service."""
     service = get_object_or_404(Service, pk=service_id)
     dashboard_url = reverse("adminapp:admin-dashboard") + "?tab=services"

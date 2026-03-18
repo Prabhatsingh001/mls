@@ -9,6 +9,7 @@ from auditapp.utils import log_audit
 from authentication.decorators import role_required
 from authentication.models import User
 from services.models import Category, JobRequest, Project, Service, ServiceItemMapping
+from .models import Feedback
 
 
 @login_required()
@@ -24,6 +25,8 @@ def customer_dashboard(request):
     my_projects = Project.objects.filter(
         job_request__customer=request.user
     ).select_related("job_request__service", "technician")
+
+    feedbacks = Feedback.objects.filter(customer=request.user).count()
 
     stats = {
         "total_requests": my_requests.count(),
@@ -43,6 +46,7 @@ def customer_dashboard(request):
         "cancelled_projects": my_projects.filter(
             status=Project.Status.CANCELLED
         ).count(),
+        "feedback_count": feedbacks,
     }
 
     context = {"tab": tab, "stats": stats}
@@ -230,6 +234,8 @@ def customer_project_detail(request, project_id):
     """View complete project details with technician and admin contact information."""
     from django.conf import settings
 
+    from .models import Feedback
+
     project = get_object_or_404(
         Project.objects.select_related("job_request__service__category", "technician"),
         pk=project_id,
@@ -257,6 +263,11 @@ def customer_project_detail(request, project_id):
     # Get extra materials added during execution
     extra_materials = project.extra_materials.all()  # type: ignore
 
+    # Get existing feedback for this project
+    existing_feedback = Feedback.objects.filter(
+        project=project, customer=request.user
+    ).first()
+
     context = {
         "project": project,
         "job_request": project.job_request,
@@ -266,5 +277,43 @@ def customer_project_detail(request, project_id):
         "admins": admins,
         "project_items": project_items,
         "extra_materials": extra_materials,
+        "existing_feedback": existing_feedback,
     }
     return render(request, "customerapp/project_detail.html", context)
+
+
+@login_required()
+@role_required([User.Role.CUSTOMER])
+def customer_feedback(request, project_id):
+    """Submit feedback for a completed project."""
+    project = get_object_or_404(
+        Project.objects.select_related("job_request__customer"),
+        pk=project_id,
+        job_request__customer=request.user,
+        status=Project.Status.COMPLETED,
+    )
+
+    if request.method == "POST":
+        rating = request.POST.get("rating")
+        comments = request.POST.get("comments", "").strip()
+
+        if not rating:
+            messages.error(request, "Rating is required.")
+            return redirect(
+                "customerapp:customer-project-detail", project_id=project_id
+            )
+
+        from .models import Feedback
+
+        Feedback.objects.create(
+            customer=request.user,
+            project=project,
+            rating=rating,
+            comments=comments,
+        )
+
+        messages.success(request, "Thank you for your feedback!")
+        return redirect("customerapp:customer-project-detail", project_id=project_id)
+
+    context = {"project": project}
+    return render(request, "customerapp/feedback_form.html", context)

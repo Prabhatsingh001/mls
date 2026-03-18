@@ -34,5 +34,5 @@ urlpatterns = [
         views.delete_project_extra_material,
         name="delete-project-extra-material",
     ),
-    path("join/", views.join_as_technician, name="join_as_technician"),
+    path("join/", views.join_as_technician, name="join-as-technician"),
 ]

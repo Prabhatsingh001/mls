@@ -39,7 +39,7 @@ urlpatterns = [
     ),
     path(
         "update-service/<int:service_id>/",
-        views.admin_edit_service,
+        views.admin_update_service,
         name="admin-update-service",
     ),
     path(

@@ -150,7 +150,7 @@ Base route groups from the project router:
 
 ### Customer (`/customer/`)
 
-- `/` (dashboard)
+- `dashboard/` (dashboard)
 - `create-request/`
 - `edit-request/<int:job_request_id>/`
 - `request-detail/<int:job_request_id>/`

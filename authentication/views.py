@@ -321,7 +321,7 @@ def forgot_password(request):
             return redirect("a:login")
         except User.DoesNotExist:
             messages.error(request, "User with this email does not exist")
-            return redirect("a:forgot_password")
+            return redirect("a:forgot-password")
     return render(request, "forgot_password.html")
 
 
@@ -354,7 +354,7 @@ def reset_password(request, uidb64, token):
 
             if new_password != confirm_password:
                 messages.error(request, "Passwords do not match")
-                return redirect("a:reset_password", uidb64=uidb64, token=token)
+                return redirect("a:reset-password", uidb64=uidb64, token=token)
 
             user.set_password(new_password)
             user.save()

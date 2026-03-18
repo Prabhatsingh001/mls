@@ -151,6 +151,11 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": 86400.0,  # every 24 hours (in seconds)
     },
 }
+CELERY_TASK_ROUTES = {
+    "audit.tasks.*": {"queue": "audit_queue"},
+    "notification.tasks.*": {"queue": "notification_queue"},
+    "authentication.tasks.*": {"queue": "email_queue"},
+}
 
 EMAIL_BACKEND = config("EMAIL_BACKEND")
 EMAIL_HOST = config("EMAIL_HOST")
