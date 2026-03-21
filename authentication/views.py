@@ -19,15 +19,28 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from django_ratelimit.decorators import ratelimit
+from django.conf import settings
+# from .validators import (
+#     validate_role,
+#     validate_password,
+#     validate_email,
+#     validate_phone,
+# )
+# from .service import (
+#     register_phone_user,
+#     register_email_user,
+# )
 
 from auditapp.models import AuditLog
-from auditapp.utils import log_audit
+from auditapp.utils import _log_details
+from auditapp.tasks import record_audit_log_tasks
 
 from .models import Address, CustomerProfile, PhoneOTP, TechnicianProfile, User
 from .tasks import (
     password_reset_success_email,
     send_reset_password_email,
     send_verification_mail,
+    send_phone_verification_sms,
 )
 from .tokens import account_activation_token, password_reset_token
 
@@ -59,6 +72,106 @@ def account_blocked(request):
     return render(request, "account_blocked.html")
 
 
+# def register(request):
+#     allowed_roles = dict(User.Role.choices)
+#     # Exclude ADMIN from self-registration
+#     allowed_roles.pop(User.Role.ADMIN, None)
+
+#     if request.method == "POST":
+#         full_name = request.POST["full_name"]
+#         password = request.POST["password"]
+#         confirm_password = request.POST["confirm_password"]
+#         role = request.POST.get("role", User.Role.CUSTOMER)
+#         signup_method = request.POST.get("signup_method", "email")
+
+#         error = validate_role(role, allowed_roles)
+#         if error:
+#             messages.error(request, error)
+#             return render(
+#                 request,
+#                 "register.html",
+#                 {"roles": allowed_roles.items()},
+#             )
+
+#         error = validate_password(password, confirm_password)
+#         if error:
+#             messages.error(request, error)
+#             return render(
+#                 request,
+#                 "register.html",
+#                 {"roles": allowed_roles.items()},
+#             )
+
+#         if signup_method == "phone":
+#             phone = request.POST.get("phone", "").strip()
+#             error = validate_phone(phone)
+#             if error:
+#                 messages.error(request, error)
+#                 return render(
+#                     request,
+#                     "register.html",
+#                     {"roles": allowed_roles.items()},
+#                 )
+
+#             user = register_phone_user(full_name, password, phone, role)
+
+#             log_details = _log_details(
+#                 request,
+#                 category=AuditLog.Category.USER,
+#                 action="signup",
+#                 description=f"New user registered: {user.email} (method: phone)",
+#                 target=user,
+#                 actor=user,
+#                 metadata={"signup_method": "phone", "role": role},
+#             )
+#             transaction.on_commit(lambda: record_audit_log_tasks.delay(log_details))  # type: ignore
+
+#             if settings.DEBUG:
+#                 otp = PhoneOTP.generate_otp(user)
+#                 logger.info(f"[Phone OTP] OTP for {phone}: {otp.otp}")
+#                 print(f"\n{'=' * 50}")
+#                 print(f"  OTP for {phone}: {otp.otp}")
+#                 print(f"{'=' * 50}\n")
+
+#             messages.success(
+#                 request,
+#                 "Registration successful! Please enter the OTP sent to your phone.",
+#             )
+#             return redirect("a:verify-phone-otp", user_id=user.pk)
+
+#         else:
+#             email = request.POST.get("email", "").strip()
+#             error = validate_email(email)
+#             if error:
+#                 messages.error(request, error)
+#                 return render(
+#                     request,
+#                     "register.html",
+#                     {"roles": allowed_roles.items()},
+#                 )
+
+#             user = register_email_user(full_name, password, email, role)
+
+#             log_details = _log_details(
+#                 request,
+#                 category=AuditLog.Category.USER,
+#                 action="signup",
+#                 description=f"New user registered: {user.email} (method: email)",
+#                 target=user,
+#                 actor=user,
+#                 metadata={"signup_method": "email", "role": role},
+#             )
+#             transaction.on_commit(lambda: record_audit_log_tasks.delay(log_details))  # type: ignore
+
+#             messages.success(
+#                 request,
+#                 "Registration successful! Please check your email to verify your email address.",
+#             )
+#             return redirect("a:resend-verification-email", email=email)
+
+#     return render(request, "register.html", {"roles": allowed_roles.items()})
+
+
 def register(request):
     allowed_roles = dict(User.Role.choices)
     # Exclude ADMIN from self-registration
@@ -72,30 +185,30 @@ def register(request):
         signup_method = request.POST.get("signup_method", "email")
 
         if role not in allowed_roles:
+            messages.error(request, "Invalid role selected.")
             return render(
                 request,
                 "register.html",
-                {"error": "Invalid role selected.", "roles": allowed_roles.items()},
+                {"roles": allowed_roles.items()},
             )
 
         if password != confirm_password:
+            messages.error(request, "Passwords do not match.")
             return render(
                 request,
                 "register.html",
-                {"error": "Passwords do not match.", "roles": allowed_roles.items()},
+                {"roles": allowed_roles.items()},
             )
 
         if signup_method == "phone":
             # --- Phone signup flow ---
             phone = request.POST.get("phone", "").strip()
             if not phone:
+                messages.error(request, "Phone number is required for phone signup.")
                 return render(
                     request,
                     "register.html",
-                    {
-                        "error": "Phone number is required.",
-                        "roles": allowed_roles.items(),
-                    },
+                    {"roles": allowed_roles.items()},
                 )
 
             if User.objects.filter(phone_number=phone).exists():
@@ -132,7 +245,7 @@ def register(request):
             user.set_password(password)
             user.save()
 
-            log_audit(
+            log_details = _log_details(
                 request,
                 category=AuditLog.Category.USER,
                 action="signup",
@@ -142,13 +255,19 @@ def register(request):
                 metadata={"signup_method": "phone", "role": role},
             )
 
+            transaction.on_commit(lambda: record_audit_log_tasks.delay(log_details))  # type: ignore
             # Generate OTP
             otp = PhoneOTP.generate_otp(user)
-            # Log OTP to console (integrate SMS provider like Twilio for production)
-            logger.info(f"[Phone OTP] OTP for {phone}: {otp.otp}")
-            print(f"\n{'=' * 50}")
-            print(f"  OTP for {phone}: {otp.otp}")
-            print(f"{'=' * 50}\n")
+
+            if settings.DEBUG:
+                logger.info(f"[Phone OTP] OTP for {phone}: {otp.otp}")
+                print(f"\n{'=' * 50}")
+                print(f"  OTP for {phone}: {otp.otp}")
+                print(f"{'=' * 50}\n")
+            else:
+                transaction.on_commit(
+                    lambda: send_phone_verification_sms.delay(user.pk, otp.otp)  # type: ignore
+                )  # type: ignore
 
             messages.success(
                 request,
@@ -160,17 +279,19 @@ def register(request):
             # --- Email signup flow (existing) ---
             email = request.POST.get("email", "").strip()
             if not email:
+                messages.error(request, "Email is required for email signup.")
                 return render(
                     request,
                     "register.html",
-                    {"error": "Email is required.", "roles": allowed_roles.items()},
+                    {"roles": allowed_roles.items()},
                 )
 
             if User.objects.filter(email=email).exists():
+                messages.error(request, "Email already exists.")
                 return render(
                     request,
                     "register.html",
-                    {"error": "Email already exists.", "roles": allowed_roles.items()},
+                    {"roles": allowed_roles.items()},
                 )
 
             user = User(
@@ -183,7 +304,7 @@ def register(request):
             user.save()
             transaction.on_commit(lambda: send_verification_mail.delay(user.id))  # type: ignore
 
-            log_audit(
+            log_details = _log_details(
                 request,
                 category=AuditLog.Category.USER,
                 action="signup",
@@ -192,6 +313,7 @@ def register(request):
                 actor=user,
                 metadata={"signup_method": "email", "role": role},
             )
+            transaction.on_commit(lambda: record_audit_log_tasks.delay(log_details))  # type: ignore
 
             messages.success(
                 request,
@@ -210,7 +332,7 @@ def choose_role(request):
         if role in User.Role.values:
             request.user.role = role
             request.user.save()
-            log_audit(
+            log_details = _log_details(
                 request,
                 category=AuditLog.Category.USER,
                 action="role_change",
@@ -218,6 +340,7 @@ def choose_role(request):
                 target=request.user,
                 metadata={"new_role": role},
             )
+            transaction.on_commit(lambda: record_audit_log_tasks.delay(log_details))  # type: ignore
             return redirect("a:redirect-dashboard")
 
     return render(request, "choose_role.html")
@@ -260,7 +383,7 @@ def login(request):
 
         if user is not None:
             auth_login(request, user)
-            log_audit(
+            log_details = _log_details(
                 request,
                 category=AuditLog.Category.USER,
                 action="login",
@@ -268,6 +391,7 @@ def login(request):
                 target=user,
                 metadata={"login_method": login_method},
             )
+            transaction.on_commit(lambda: record_audit_log_tasks.delay(log_details))  # type: ignore
             return redirect("a:redirect-dashboard")
         else:
             return render(
@@ -358,7 +482,7 @@ def reset_password(request, uidb64, token):
 
             user.set_password(new_password)
             user.save()
-            log_audit(
+            log_details = _log_details(
                 request,
                 category=AuditLog.Category.USER,
                 action="password_reset",
@@ -366,6 +490,7 @@ def reset_password(request, uidb64, token):
                 target=user,
                 metadata={"user_id": user.pk},
             )
+            transaction.on_commit(lambda: record_audit_log_tasks.delay(log_details))  # type: ignore
             transaction.on_commit(lambda: password_reset_success_email.delay(user.id))  # type: ignore
             messages.success(request, "Password reset successfully")
             return redirect("a:login")
@@ -661,7 +786,7 @@ def update_password(request, user_id):
         user.set_password(new_password)
         user.save()
 
-        log_audit(
+        log_details = _log_details(
             request,
             category=AuditLog.Category.USER,
             action="password_change",
@@ -671,6 +796,7 @@ def update_password(request, user_id):
 
         update_session_auth_hash(request, user)
         # send success email
+        transaction.on_commit(lambda: record_audit_log_tasks.delay(log_details))  # type: ignore
         transaction.on_commit(lambda: password_reset_success_email.delay(user.id))  # type: ignore
         messages.success(request, "Password reset successfully")
 
@@ -743,11 +869,16 @@ def resend_phone_otp(request, user_id):
         return redirect("a:login")
 
     otp = PhoneOTP.generate_otp(user)
-    # Log OTP to console (integrate SMS provider for production)
-    logger.info(f"[Phone OTP] OTP for {user.phone_number}: {otp.otp}")
-    print(f"\n{'=' * 50}")
-    print(f"  OTP for {user.phone_number}: {otp.otp}")
-    print(f"{'=' * 50}\n")
+    if settings.DEBUG:
+        # Log OTP to console (integrate SMS provider for production)
+        logger.info(f"[Phone OTP] OTP for {user.phone_number}: {otp.otp}")
+        print(f"\n{'=' * 50}")
+        print(f"  OTP for {user.phone_number}: {otp.otp}")
+        print(f"{'=' * 50}\n")
+    else:
+        transaction.on_commit(
+            lambda: send_phone_verification_sms.delay(user.id, otp.otp)  # type: ignore
+        )
 
     messages.success(request, "A new OTP has been sent to your phone number.")
     return redirect("a:verify-phone-otp", user_id=user.pk)

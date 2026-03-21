@@ -5,9 +5,11 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
+from django.db import transaction
 
 from auditapp.models import AuditLog
-from auditapp.utils import log_audit
+from auditapp.utils import _log_details
+from auditapp.tasks import record_audit_log_tasks
 from authentication.decorators import role_required
 from authentication.models import TechnicianProfile, User
 
@@ -292,7 +294,7 @@ def update_project_status(request, project_id):
         project.job_request.save(update_fields=["is_project_completed"])
     project.save()
 
-    log_audit(
+    log_details = _log_details(
         request,
         category=AuditLog.Category.PROJECT,
         action="status_updated",
@@ -300,7 +302,7 @@ def update_project_status(request, project_id):
         target=project,
         metadata={"new_status": new_status},
     )
-
+    transaction.on_commit(lambda: record_audit_log_tasks.delay(log_details))  # type: ignore
     label = dict(Project.Status.choices).get(new_status, new_status)
     messages.success(request, f"Project marked as {label}.")
     return redirect("services:project-details", project_id=project.pk)

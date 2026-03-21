@@ -221,3 +221,32 @@ def password_reset_success_email(user_id):
     )
     email.attach_alternative(html_content, "text/html")
     email.send(fail_silently=True)
+
+
+@shared_task()
+def send_phone_verification_sms(user_id, verification_code):
+    """
+    Send a phone verification SMS to users asynchronously.
+
+    Args:
+        user_id: UUID of the user to send the SMS to
+        verification_code: The code to include in the SMS for verification
+
+    The SMS includes:
+        - A greeting with the user's name
+        - The verification code
+        - Instructions for using the code
+        - Security notice for unintended recipients
+    Uses the send_sms function from notification/sms.py to send the SMS via Twilio.
+    """
+    from .models import User
+    from notification.sms import send_sms
+
+    user = User.objects.get(id=user_id)
+    message_body = (
+        f"Hi {user.full_name},\n\n"
+        f"Your phone verification code is: {verification_code}\n\n"
+        "Please enter this code in the app to verify your phone number.\n\n"
+        "If you didn’t request this, ignore this message.\n\n— MLS Team"
+    )
+    send_sms(user.phone_number, message_body)

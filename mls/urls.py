@@ -40,6 +40,7 @@ urlpatterns = [
         "notifications/",
         include(("notification.urls", "notification"), namespace="notification"),
     ),
+    path("audit/", include(("auditapp.urls", "auditapp"), namespace="auditapp")),
     path("auth/", include("social_django.urls", namespace="social")),
 ]
 

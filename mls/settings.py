@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.humanize",
     "django_celery_results",
     "django_celery_beat",
     "social_django",
@@ -152,10 +153,11 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 CELERY_TASK_ROUTES = {
-    "audit.tasks.*": {"queue": "audit_queue"},
+    "auditapp.tasks.*": {"queue": "audit_queue"},
     "notification.tasks.*": {"queue": "notification_queue"},
     "authentication.tasks.*": {"queue": "email_queue"},
 }
+
 
 EMAIL_BACKEND = config("EMAIL_BACKEND")
 EMAIL_HOST = config("EMAIL_HOST")

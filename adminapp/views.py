@@ -5,12 +5,14 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.sessions.models import Session
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
+from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 
 from auditapp.models import AuditLog
-from auditapp.utils import log_audit
+from auditapp.utils import _log_details
+from auditapp.tasks import record_audit_log_tasks
 from authentication.decorators import role_required
 from authentication.models import CustomerProfile, TechnicianProfile, User
 from customerapp.models import Feedback
@@ -156,12 +158,9 @@ def admin_dashboard(request):
         context["categories"] = paginator.get_page(page_number)
 
     elif tab == "feedbacks":
-        feedbacks_qs = (
-            Feedback.objects.select_related(
-                "customer", "project__job_request__service", "project__technician"
-            )
-            .order_by("-created_at")
-        )
+        feedbacks_qs = Feedback.objects.select_related(
+            "customer", "project__job_request__service", "project__technician"
+        ).order_by("-created_at")
         paginator = Paginator(feedbacks_qs, 10)
         context["feedbacks"] = paginator.get_page(page_number)
 
@@ -232,14 +231,15 @@ def admin_toggle_user_active(request, user_id):
 
             status = "activated" if not target.is_blocked else "deactivated"
 
-            log_audit(
+            log_details = _log_details(
                 request,
                 category=AuditLog.Category.ADMIN,
-                action="user_banned" if target.is_blocked else "user_unbanned",
-                description=f"Admin {request.user.email} {status} user {target.email}",
+                action="user_status_changed",
+                description=f"Admin {request.user.email} {status} {target.email}'s account",
                 target=target,
-                metadata={"is_blocked": target.is_blocked},
+                metadata={"new_status": status},
             )
+            transaction.on_commit(lambda: record_audit_log_tasks.delay(log_details))  # type: ignore
 
             messages.success(
                 request, f"{target.full_name}'s account has been {status}."
@@ -261,7 +261,7 @@ def admin_make_admin(request, user_id):
             target.role = User.Role.ADMIN
             target.is_staff = True
             target.save()
-            log_audit(
+            log_details = _log_details(
                 request,
                 category=AuditLog.Category.ADMIN,
                 action="user_promoted",
@@ -269,6 +269,7 @@ def admin_make_admin(request, user_id):
                 target=target,
                 metadata={"new_role": target.role},
             )
+            transaction.on_commit(lambda: record_audit_log_tasks.delay(log_details))  # type: ignore
             messages.success(request, f"{target.full_name} has been promoted to Admin.")
     return redirect(request.META.get("HTTP_REFERER", "")) or redirect(dashboard_url)
 
@@ -290,7 +291,7 @@ def admin_remove_admin(request, user_id):
             target.role = User.Role.CUSTOMER  # Default to customer role
             target.is_staff = False
             target.save()
-            log_audit(
+            log_details = _log_details(
                 request,
                 category=AuditLog.Category.ADMIN,
                 action="user_demoted",
@@ -298,6 +299,7 @@ def admin_remove_admin(request, user_id):
                 target=target,
                 metadata={"old_role": User.Role.ADMIN, "new_role": target.role},
             )
+            transaction.on_commit(lambda: record_audit_log_tasks.delay(log_details))  # type: ignore
             messages.success(
                 request, f"{target.full_name} has been demoted from Admin."
             )
@@ -351,7 +353,7 @@ def admin_delete_category(request, category_id):
         category = get_object_or_404(Category, pk=category_id)
         name = category.name
         try:
-            log_audit(
+            log_details = _log_details(
                 request,
                 category=AuditLog.Category.ADMIN,
                 action="category_deleted",
@@ -359,6 +361,7 @@ def admin_delete_category(request, category_id):
                 metadata={"category_name": name},
             )
             category.delete()
+            transaction.on_commit(lambda: record_audit_log_tasks.delay(log_details))  # type: ignore
             messages.success(request, f'Category "{name}" has been deleted.')
         except Exception as e:
             messages.error(request, f"Failed to delete category: {e}")
@@ -406,13 +409,14 @@ def admin_create_service(request):
                 base_price=base_price,
                 is_active=True,
             )
-            log_audit(
+            log_details = _log_details(
                 request,
                 category=AuditLog.Category.ADMIN,
                 action="service_created",
                 description=f"Admin {request.user.email} created service '{title}'",
                 metadata={"service_title": title, "base_price": str(base_price)},
             )
+            transaction.on_commit(lambda: record_audit_log_tasks.delay(log_details))  # type: ignore
             messages.success(request, f'Service "{title}" created successfully.')
         except Exception as e:
             messages.error(request, f"Failed to create service: {e}")
@@ -429,7 +433,7 @@ def admin_delete_service(request, service_id):
         try:
             service = get_object_or_404(Service, pk=service_id)
             name = str(service)
-            log_audit(
+            log_details = _log_details(
                 request,
                 category=AuditLog.Category.ADMIN,
                 action="service_deleted",
@@ -437,6 +441,7 @@ def admin_delete_service(request, service_id):
                 metadata={"service_title": name},
             )
             service.delete()
+            transaction.on_commit(lambda: record_audit_log_tasks.delay(log_details))  # type: ignore
             messages.success(request, f'Service "{name}" has been deleted.')
         except Exception as e:
             messages.error(request, f"Failed to delete service: {e}")
@@ -494,7 +499,7 @@ def admin_update_service(request, service_id):
                 audit_meta["old_price"] = old_price
                 audit_meta["new_price"] = str(base_price)
 
-            log_audit(
+            log_details = _log_details(
                 request,
                 category=AuditLog.Category.ADMIN,
                 action=action,
@@ -502,6 +507,7 @@ def admin_update_service(request, service_id):
                 target=service,
                 metadata=audit_meta,
             )
+            transaction.on_commit(lambda: record_audit_log_tasks.delay(log_details))  # type: ignore
 
             messages.success(request, f'Service "{title}" updated successfully.')
         except Exception as e:
@@ -782,7 +788,7 @@ def admin_update_tech_status(request, user_id):
             old_status = tech_profile.verification_status
             tech_profile.verification_status = new_status
             tech_profile.save(update_fields=["verification_status"])
-            log_audit(
+            log_details = _log_details(
                 request,
                 category=AuditLog.Category.ADMIN,
                 action="provider_status_changed",
@@ -790,6 +796,7 @@ def admin_update_tech_status(request, user_id):
                 target=target_user,
                 metadata={"old_status": old_status, "new_status": new_status},
             )
+            transaction.on_commit(lambda: record_audit_log_tasks.delay(log_details))  # type: ignore
             messages.success(
                 request,
                 f"{target_user.full_name}'s status updated to {tech_profile.get_verification_status_display()}.",
@@ -858,7 +865,7 @@ def admin_assign_technician(request, job_request_id):
             )
             project.technician = technician
             project.save(update_fields=["technician"])
-            log_audit(
+            log_details = _log_details(
                 request=request,
                 category=AuditLog.Category.ADMIN,
                 action="technician_assigned",
@@ -866,6 +873,7 @@ def admin_assign_technician(request, job_request_id):
                 target=project,
                 metadata={"technician_id": technician.pk, "project_id": project.pk},
             )
+            transaction.on_commit(lambda: record_audit_log_tasks.delay(log_details))  # type: ignore
             messages.success(
                 request,
                 f"{technician.full_name} assigned to PRJ-{project.pk}.",
@@ -944,7 +952,7 @@ def admin_convert_to_project(request, job_request_id):
 
         job_request.is_converted_to_project = True
         job_request.save(update_fields=["is_converted_to_project"])
-        log_audit(
+        log_details = _log_details(
             request=request,
             category=AuditLog.Category.ADMIN,
             action="request_converted_to_project",
@@ -952,6 +960,7 @@ def admin_convert_to_project(request, job_request_id):
             target=project,
             metadata={"job_request_id": job_request.pk, "project_id": project.pk},
         )
+        transaction.on_commit(lambda: record_audit_log_tasks.delay(log_details))  # type: ignore
         messages.success(request, f"Request #{job_request.pk} converted to a project.")
     return redirect("adminapp:admin-review-details", job_request_id=job_request_id)
 

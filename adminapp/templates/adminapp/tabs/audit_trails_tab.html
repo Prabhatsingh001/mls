@@ -80,7 +80,9 @@
                 {% for log in audit_logs %}
                 <tr class="hover:bg-gray-50 transition">
                     <td class="px-4 py-3 text-gray-500 whitespace-nowrap">
-                        {{ log.created_at|date:"M d, Y H:i" }}
+                        <a href="{% url 'auditapp:log-details' log_id=log.id %}" class="text-blue-600 hover:underline">
+                            {{ log.created_at|date:"M d, Y H:i" }}
+                        </a>
                     </td>
                     <td class="px-4 py-3 text-center whitespace-nowrap">
                         {% if log.category == "USER" %}

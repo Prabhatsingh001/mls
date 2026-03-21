@@ -3,9 +3,11 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.db import transaction
 
 from auditapp.models import AuditLog
-from auditapp.utils import log_audit
+from auditapp.utils import _log_details
+from auditapp.tasks import record_audit_log_tasks
 from authentication.decorators import role_required
 from authentication.models import User
 from services.models import Category, JobRequest, Project, Service, ServiceItemMapping
@@ -103,7 +105,7 @@ def customer_create_request(request):
         preferred_date=preferred_date,
     )
 
-    log_audit(
+    log_details = _log_details(
         request,
         category=AuditLog.Category.BUSINESS,
         action="booking_created",
@@ -111,7 +113,7 @@ def customer_create_request(request):
         target=job_request,
         metadata={"service_id": service.pk, "service_title": service.title},
     )
-
+    transaction.on_commit(lambda: record_audit_log_tasks.delay(log_details))  # type: ignore
     messages.success(
         request, f"Job request for '{service.title}' submitted successfully!"
     )
@@ -214,7 +216,7 @@ def customer_cancel_request(request, request_id):
             "This request has already been converted to a project and cannot be cancelled.",
         )
     else:
-        log_audit(
+        log_details = _log_details(
             request,
             category=AuditLog.Category.BUSINESS,
             action="booking_cancelled",
@@ -223,6 +225,7 @@ def customer_cancel_request(request, request_id):
             metadata={"service_title": job_request.service.title},
         )
         job_request.delete()
+        transaction.on_commit(lambda: record_audit_log_tasks.delay(log_details))  # type: ignore
         messages.success(request, "Job request cancelled successfully.")
 
     return redirect(dashboard_url)
@@ -305,12 +308,23 @@ def customer_feedback(request, project_id):
 
         from .models import Feedback
 
+        log_details = _log_details(
+            request,
+            category=AuditLog.Category.BUSINESS,
+            action="feedback_submitted",
+            description=f"Feedback submitted for project #{project.pk} by {request.user.email}",
+            target=project,
+            metadata={"rating": rating, "comments": comments},
+        )
+
         Feedback.objects.create(
             customer=request.user,
             project=project,
             rating=rating,
             comments=comments,
         )
+
+        transaction.on_commit(lambda: record_audit_log_tasks.delay(log_details))  # type: ignore
 
         messages.success(request, "Thank you for your feedback!")
         return redirect("customerapp:customer-project-detail", project_id=project_id)
