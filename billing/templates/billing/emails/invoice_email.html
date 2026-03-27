@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice {{ invoice.invoice_number }}</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #374151; background-color: #f3f4f6;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+        <!-- Header -->
+        <tr>
+            <td style="background-color: #1f2937; padding: 30px; text-align: center;">
+                <h1 style="margin: 0; color: #ffffff; font-size: 24px;">{{ company_name }}</h1>
+                <p style="margin: 10px 0 0; color: #9ca3af; font-size: 14px;">Invoice Notification</p>
+            </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+            <td style="padding: 30px;">
+                <p style="margin: 0 0 20px;">Dear {{ invoice.customer_name }},</p>
+
+                <p style="margin: 0 0 20px;">Your invoice <strong>{{ invoice.invoice_number }}</strong> for the following service is ready:</p>
+
+                <!-- Invoice Summary -->
+                <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; border-radius: 8px; margin-bottom: 20px;">
+                    <tr>
+                        <td style="padding: 20px;">
+                            <table width="100%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td style="padding: 5px 0; color: #6b7280;">Service:</td>
+                                    <td style="padding: 5px 0; text-align: right; font-weight: bold;">{{ invoice.project.job_request.service.title }}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 5px 0; color: #6b7280;">Project ID:</td>
+                                    <td style="padding: 5px 0; text-align: right;">PRJ-{{ invoice.project.pk }}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 5px 0; color: #6b7280;">Issue Date:</td>
+                                    <td style="padding: 5px 0; text-align: right;">{{ invoice.issue_date|date:"F d, Y" }}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 5px 0; color: #6b7280;">Due Date:</td>
+                                    <td style="padding: 5px 0; text-align: right;">{{ invoice.due_date|date:"F d, Y" }}</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2" style="border-top: 1px solid #e5e7eb; padding-top: 10px; margin-top: 10px;"></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 5px 0; font-weight: bold; font-size: 16px;">Amount Due:</td>
+                                    <td style="padding: 5px 0; text-align: right; font-weight: bold; font-size: 18px; color: #059669;">Rs. {{ invoice.amount_due }}</td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- CTA Button -->
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 20px;">
+                    <tr>
+                        <td style="text-align: center;">
+                            <a href="{{ view_url }}" style="display: inline-block; padding: 14px 30px; background-color: #059669; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold;">View Invoice & Pay</a>
+                        </td>
+                    </tr>
+                </table>
+
+                <p style="margin: 0 0 10px; color: #6b7280; font-size: 13px;">If the button doesn't work, copy and paste this link into your browser:</p>
+                <p style="margin: 0 0 20px; word-break: break-all; color: #3b82f6; font-size: 13px;">{{ view_url }}</p>
+
+                <p style="margin: 0 0 20px;">The PDF invoice is attached to this email for your records.</p>
+
+                <p style="margin: 0;">Thank you for choosing {{ company_name }}!</p>
+            </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+            <td style="background-color: #f9fafb; padding: 20px 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+                <p style="margin: 0 0 5px; color: #6b7280; font-size: 12px;">{{ company_name }}</p>
+                <p style="margin: 0; color: #9ca3af; font-size: 11px;">This is an automated email. Please do not reply directly to this message.</p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

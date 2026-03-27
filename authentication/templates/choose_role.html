@@ -68,25 +68,25 @@
 </div>
 
 <script>
-  // Highlight selected card's border
-  document.querySelectorAll('.role-card input[type="radio"]').forEach(function (radio) {
-    radio.addEventListener('change', function () {
-      document.querySelectorAll('.role-card').forEach(function (card) {
-        card.classList.remove('border-gray-800');
-        card.classList.add('border-gray-200');
-      });
-      if (this.checked) {
-        this.closest('.role-card').classList.remove('border-gray-200');
-        this.closest('.role-card').classList.add('border-gray-800');
-      }
+    // Highlight selected card's border
+    document.querySelectorAll('.role-card input[type="radio"]').forEach(function (radio) {
+        radio.addEventListener('change', function () {
+        document.querySelectorAll('.role-card').forEach(function (card) {
+            card.classList.remove('border-gray-800');
+            card.classList.add('border-gray-200');
+        });
+        if (this.checked) {
+            this.closest('.role-card').classList.remove('border-gray-200');
+            this.closest('.role-card').classList.add('border-gray-800');
+        }
+        });
     });
-  });
 
-  // Trigger on load for the default-checked radio
-  const checked = document.querySelector('.role-card input[type="radio"]:checked');
-  if (checked) {
-    checked.closest('.role-card').classList.remove('border-gray-200');
-    checked.closest('.role-card').classList.add('border-gray-800');
-  }
+    // Trigger on load for the default-checked radio
+    const checked = document.querySelector('.role-card input[type="radio"]:checked');
+    if (checked) {
+        checked.closest('.role-card').classList.remove('border-gray-200');
+        checked.closest('.role-card').classList.add('border-gray-800');
+    }
 </script>
 {% endblock %}

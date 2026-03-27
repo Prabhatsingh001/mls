@@ -32,6 +32,10 @@
         {% include "customerapp/tabs/projects_tab.html" %}
     {% endif %}
 
+    {% if tab == "invoices" %}
+        {% include "billing/customer/invoices_list.html" %}
+    {% endif %}
+
     {% include "customerapp/components/request_modal.html" %}
 
 {% endblock %}

@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 @role_required([User.Role.ADMIN])
 def admin_dashboard(request):
 
-    tab = request.GET.get("tab", "technicians")
+    tab = request.GET.get("tab", "requests")
     page_number = request.GET.get("page")
 
     context = {"tab": tab}
@@ -200,6 +200,8 @@ def admin_dashboard(request):
         context["all_users"] = User.objects.only("id", "full_name", "email").order_by(
             "full_name"
         )
+    elif tab == "invoices":
+        return redirect(reverse("billing:admin-invoices") + "?page=" + str(page_number))
 
     return render(request, "adminapp/admin.html", context)
 

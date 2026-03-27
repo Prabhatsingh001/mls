@@ -41,6 +41,7 @@ urlpatterns = [
         include(("notification.urls", "notification"), namespace="notification"),
     ),
     path("audit/", include(("auditapp.urls", "auditapp"), namespace="auditapp")),
+    path("billing/", include(("billing.urls", "billing"), namespace="billing")),
     path("auth/", include("social_django.urls", namespace="social")),
 ]
 

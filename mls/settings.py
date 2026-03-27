@@ -120,7 +120,7 @@ NPM_BIN_PATH = "C:\\Program Files\\nodejs\\npm.cmd"
 if DEBUG:
     SITE_DOMAIN = "127.0.0.1:8000"
     PROTOCOL = "http"
-    ALLOWED_HOSTS = ["127.0.0.1"]
+    ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
 else:
     SITE_DOMAIN = "url-ly.onrender.com"
     PROTOCOL = "https"
@@ -130,14 +130,21 @@ else:
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.postgresql",
+#         "NAME": "mls_db",
+#         "USER": "mls_user",
+#         "PASSWORD": "mls_pg_secret_2026",
+#         "HOST": "localhost",
+#         "PORT": "5432",
+#     }
+# }
+
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": "mls_db",
-        "USER": "mls_user",
-        "PASSWORD": "mls_pg_secret_2026",
-        "HOST": "localhost",
-        "PORT": "5432",
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 }
 
@@ -156,6 +163,7 @@ CELERY_TASK_ROUTES = {
     "auditapp.tasks.*": {"queue": "audit_queue"},
     "notification.tasks.*": {"queue": "notification_queue"},
     "authentication.tasks.*": {"queue": "email_queue"},
+    "billing.tasks.*": {"queue": "email_queue"},
 }
 
 
@@ -179,6 +187,11 @@ TWILIO_PHONE_NUMBER = config("TWILIO_PHONE_NUMBER", default="")
 VAPID_PUBLIC_KEY = config("VAPID_PUBLIC_KEY", cast=str).replace("\\n", "\n")  # type: ignore
 VAPID_PRIVATE_KEY = config("VAPID_PRIVATE_KEY", cast=str).replace("\\n", "\n")  # type: ignore
 VAPID_ADMIN_EMAIL = config("VAPID_ADMIN_EMAIL", default="admin@example.com")
+
+# ── Razorpay Payment Gateway ─────────────────────────────────────────
+RAZORPAY_KEY_ID = config("RAZORPAY_KEY_ID", default="")
+RAZORPAY_KEY_SECRET = config("RAZORPAY_KEY_SECRET", default="")
+RAZORPAY_WEBHOOK_SECRET = config("RAZORPAY_WEBHOOK_SECRET", default="")
 
 
 # Password validation

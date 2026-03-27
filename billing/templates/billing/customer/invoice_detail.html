@@ -1,0 +1,276 @@
+{% extends "index.html" %}
+
+{% block title %}Invoice {{ invoice.invoice_number }} — MLS{% endblock %}
+
+{% block extra_head %}
+{% if invoice.amount_due > 0 %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl min-h-screen mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+
+    <!-- Back Link -->
+    <a href="{% url 'billing:customer-invoices' %}" class="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-6">
+        <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        Back to Invoices
+    </a>
+
+    <!-- Invoice Card -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+
+        <!-- Header -->
+        <div class="bg-gray-800 text-white px-6 py-5">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h1 class="text-xl font-bold">MLS - Micro Labor Services</h1>
+                    <p class="text-gray-300 text-sm mt-1">Professional Home Services</p>
+                </div>
+                <div class="text-right">
+                    <h2 class="text-2xl font-bold">INVOICE</h2>
+                    <p class="text-gray-300">{{ invoice.invoice_number }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Invoice Info -->
+        <div class="px-6 py-4 border-b border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <h3 class="text-sm font-medium text-gray-500">Bill To</h3>
+                <p class="mt-1 text-gray-900 font-medium">{{ invoice.customer_name }}</p>
+                <p class="text-sm text-gray-600">{{ invoice.customer_email }}</p>
+                {% if invoice.customer_phone %}<p class="text-sm text-gray-600">{{ invoice.customer_phone }}</p>{% endif %}
+                <p class="text-sm text-gray-600 mt-1">{{ invoice.billing_address }}</p>
+            </div>
+            <div class="md:text-right">
+                <div class="mb-2">
+                    <span class="text-sm text-gray-500">Issue Date:</span>
+                    <span class="ml-2 text-gray-900">{{ invoice.issue_date|date:"M d, Y" }}</span>
+                </div>
+                <div class="mb-2">
+                    <span class="text-sm text-gray-500">Due Date:</span>
+                    <span class="ml-2 text-gray-900">{{ invoice.due_date|date:"M d, Y" }}</span>
+                </div>
+                <div>
+                    <span class="text-sm text-gray-500">Status:</span>
+                    <span class="ml-2 px-2 py-1 text-xs font-semibold rounded-full
+                        {% if invoice.status == 'PAID' %}bg-green-100 text-green-800
+                        {% elif invoice.status == 'SENT' %}bg-blue-100 text-blue-800
+                        {% elif invoice.status == 'PARTIAL' %}bg-yellow-100 text-yellow-800
+                        {% elif invoice.status == 'OVERDUE' %}bg-red-100 text-red-800
+                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                        {{ invoice.get_status_display }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Project Info -->
+        <div class="px-6 py-3 bg-gray-50 border-b border-gray-200">
+            <span class="text-sm text-gray-500">Project:</span>
+            <span class="ml-2 text-gray-900">PRJ-{{ invoice.project.pk }} — {{ invoice.project.job_request.service.title }}</span>
+            {% if invoice.project.technician %}
+            <span class="text-gray-500 ml-2">| Technician: {{ invoice.project.technician.full_name }}</span>
+            {% endif %}
+        </div>
+
+        <!-- Line Items -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">#</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Qty</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Unit Price</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in invoice.line_items.all %}
+                    <tr>
+                        <td class="px-6 py-4 text-sm text-gray-500">{{ forloop.counter }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">{{ item.description }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">{{ item.get_item_type_display }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900 text-right">{{ item.quantity }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900 text-right">Rs. {{ item.unit_price }}</td>
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900 text-right">Rs. {{ item.line_total }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Totals -->
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
+            <div class="flex justify-end">
+                <div class="w-full max-w-xs space-y-2">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Subtotal:</span>
+                        <span class="text-gray-900">Rs. {{ invoice.subtotal }}</span>
+                    </div>
+                    {% if invoice.discount_amount > 0 %}
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Discount{% if invoice.discount_description %} ({{ invoice.discount_description }}){% endif %}:</span>
+                        <span class="text-green-600">- Rs. {{ invoice.discount_amount }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">GST ({{ invoice.tax_rate }}%):</span>
+                        <span class="text-gray-900">Rs. {{ invoice.tax_amount }}</span>
+                    </div>
+                    <div class="flex justify-between text-base font-bold border-t border-gray-300 pt-2">
+                        <span class="text-gray-900">Total:</span>
+                        <span class="text-gray-900">Rs. {{ invoice.total_amount }}</span>
+                    </div>
+                    {% if invoice.amount_paid > 0 %}
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Amount Paid:</span>
+                        <span class="text-green-600">Rs. {{ invoice.amount_paid }}</span>
+                    </div>
+                    {% endif %}
+                    {% if invoice.amount_due > 0 %}
+                    <div class="flex justify-between text-base font-bold text-red-600">
+                        <span>Amount Due:</span>
+                        <span>Rs. {{ invoice.amount_due }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="px-6 py-4 bg-white border-t border-gray-200 flex flex-wrap gap-3 justify-end">
+            {% if invoice.pdf_file %}
+            <a href="{% url 'billing:customer-download-pdf' invoice.pk %}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Download PDF
+            </a>
+            {% endif %}
+            {% if invoice.amount_due > 0 and invoice.status != 'CANCELLED' %}
+            <button id="pay-now-btn" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
+                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                Pay Now (Rs. {{ invoice.amount_due }})
+            </button>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <!-- Payment History -->
+    {% if invoice.payments.exists %}
+    <div class="mt-8 bg-white rounded-lg shadow overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-medium text-gray-900">Payment History</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Method</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Transaction ID</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for payment in invoice.payments.all %}
+                    <tr>
+                        <td class="px-6 py-4 text-sm text-gray-900">{{ payment.payment_date|date:"M d, Y h:i A" }}</td>
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900">Rs. {{ payment.amount }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ payment.get_method_display }}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full
+                                {% if payment.status == 'COMPLETED' %}bg-green-100 text-green-800
+                                {% elif payment.status == 'PENDING' %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ payment.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-500">
+                            {{ payment.transaction_id|default:payment.razorpay_payment_id|default:"—" }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+{% if invoice.amount_due > 0 %}
+<script>
+document.getElementById('pay-now-btn').addEventListener('click', function() {
+    var btn = this;
+    btn.disabled = true;
+    btn.innerHTML = '<svg class="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Processing...';
+
+    // Create Razorpay order
+    fetch('{% url "billing:initiate-payment" invoice.pk %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showToast(data.error, 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg> Pay Now (Rs. {{ invoice.amount_due }})';
+            return;
+        }
+
+        // Open Razorpay checkout
+        var options = data.checkout_data;
+        options.handler = function(response) {
+            // Verify payment on server
+            fetch('{% url "billing:payment-callback" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify(response)
+            })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    showToast('Payment successful!', 'success');
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    showToast(result.error || 'Payment verification failed', 'error');
+                }
+            });
+        };
+        options.modal = {
+            ondismiss: function() {
+                btn.disabled = false;
+                btn.innerHTML = '<svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg> Pay Now (Rs. {{ invoice.amount_due }})';
+            }
+        };
+
+        var rzp = new Razorpay(options);
+        rzp.open();
+    })
+    .catch(err => {
+        showToast('Failed to initiate payment', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg> Pay Now (Rs. {{ invoice.amount_due }})';
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

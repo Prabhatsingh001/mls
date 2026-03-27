@@ -19,6 +19,7 @@ from .models import Feedback
 def customer_dashboard(request):
     """Main customer dashboard with tabs: services, my-requests, my-projects."""
     tab = request.GET.get("tab", "services")
+    page_number = request.GET.get("page", 1)
 
     # Stats
     my_requests = JobRequest.objects.filter(customer=request.user).select_related(
@@ -75,6 +76,9 @@ def customer_dashboard(request):
 
     elif tab == "my-projects":
         context["projects"] = my_projects.order_by("-job_request__created_at")
+    
+    elif tab == "invoices":
+        return redirect(reverse("billing:customer-invoices") + "?page=" + str(page_number))
 
     return render(request, "customerapp/customer.html", context)
 
