@@ -6,7 +6,7 @@ services:
     image: mls-app:latest
     container_name: mls_web
     restart: unless-stopped
-    command: sh -c "python manage.py migrate --noinput && python manage.py collectstatic --noinput && python manage.py runserver 0.0.0.0:8000"
+    command: sh -c "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
     ports:
       - "8000:8000"
     env_file:
@@ -21,6 +21,7 @@ services:
       CELERY_BROKER_URL: redis://:mls_redis_secret_2026@redis:6379/0
       CELERY_RESULT_BACKEND: django-db
     volumes:
+      - .:/app
       - media_data:/app/media
       - static_data:/app/staticfiles
     depends_on:

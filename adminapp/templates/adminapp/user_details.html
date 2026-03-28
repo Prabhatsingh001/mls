@@ -38,7 +38,7 @@
             {{ target_user.get_role_display }}
         </span>
         <!-- Active/Inactive badge -->
-        {% if target_user.is_active %}
+        {% if not target_user.is_blocked %}
             <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
             <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span> Active
             </span>
@@ -302,8 +302,8 @@
         {% csrf_token %}
         <button type="submit"
                 class="rounded px-4 py-2 text-sm font-medium transition
-                {% if target_user.is_active %}bg-red-50 text-red-700 border border-red-200 hover:bg-red-100{% else %}bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100{% endif %}">
-          {% if target_user.is_active %}Deactivate Account{% else %}Activate Account{% endif %}
+                {% if not target_user.is_blocked %}bg-red-50 text-red-700 border border-red-200 hover:bg-red-100{% else %}bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100{% endif %}">
+          {% if not target_user.is_blocked %}Deactivate Account{% else %}Activate Account{% endif %}
         </button>
       </form>
       {% if target_user.role != 'ADMIN' %}
