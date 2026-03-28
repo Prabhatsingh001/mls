@@ -1,4 +1,150 @@
 services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mls-app:latest
+    container_name: mls_web
+    restart: unless-stopped
+    command: sh -c "python manage.py migrate --noinput && python manage.py collectstatic --noinput && python manage.py runserver 0.0.0.0:8000"
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      DATABASE_ENGINE: django.db.backends.postgresql
+      DATABASE_NAME: mls_db
+      DATABASE_USER: mls_user
+      DATABASE_PASSWORD: mls_pg_secret_2026
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      CELERY_BROKER_URL: redis://:mls_redis_secret_2026@redis:6379/0
+      CELERY_RESULT_BACKEND: django-db
+    volumes:
+      - media_data:/app/media
+      - static_data:/app/staticfiles
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  celery_worker_email:
+    image: mls-app:latest
+    container_name: mls_celery_worker_email
+    restart: unless-stopped
+    user: app
+    command: celery -A mls worker -Q email_queue -n email_worker@%h --loglevel=info --pool=solo
+    env_file:
+      - .env
+    environment:
+      DATABASE_ENGINE: django.db.backends.postgresql
+      DATABASE_NAME: mls_db
+      DATABASE_USER: mls_user
+      DATABASE_PASSWORD: mls_pg_secret_2026
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      CELERY_BROKER_URL: redis://:mls_redis_secret_2026@redis:6379/0
+      CELERY_RESULT_BACKEND: django-db
+      C_FORCE_ROOT: "false"
+    volumes:
+      - media_data:/app/media
+      - static_data:/app/staticfiles
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      web:
+        condition: service_started
+
+  celery_worker_audit:
+    image: mls-app:latest
+    container_name: mls_celery_worker_audit
+    restart: unless-stopped
+    user: app
+    command: celery -A mls worker -Q audit_queue -n audit_worker@%h --loglevel=info --pool=solo
+    env_file:
+      - .env
+    environment:
+      DATABASE_ENGINE: django.db.backends.postgresql
+      DATABASE_NAME: mls_db
+      DATABASE_USER: mls_user
+      DATABASE_PASSWORD: mls_pg_secret_2026
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      CELERY_BROKER_URL: redis://:mls_redis_secret_2026@redis:6379/0
+      CELERY_RESULT_BACKEND: django-db
+      C_FORCE_ROOT: "false"
+    volumes:
+      - media_data:/app/media
+      - static_data:/app/staticfiles
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      web:
+        condition: service_started
+
+  celery_worker_notification:
+    image: mls-app:latest
+    container_name: mls_celery_worker_notification
+    restart: unless-stopped
+    user: app
+    command: celery -A mls worker -Q notification_queue -n notification_worker@%h --loglevel=info --pool=solo
+    env_file:
+      - .env
+    environment:
+      DATABASE_ENGINE: django.db.backends.postgresql
+      DATABASE_NAME: mls_db
+      DATABASE_USER: mls_user
+      DATABASE_PASSWORD: mls_pg_secret_2026
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      CELERY_BROKER_URL: redis://:mls_redis_secret_2026@redis:6379/0
+      CELERY_RESULT_BACKEND: django-db
+      C_FORCE_ROOT: "false"
+    volumes:
+      - media_data:/app/media
+      - static_data:/app/staticfiles
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      web:
+        condition: service_started
+
+  celery_beat:
+    image: mls-app:latest
+    container_name: mls_celery_beat
+    restart: unless-stopped
+    user: app
+    command: celery -A mls beat --loglevel=info
+    env_file:
+      - .env
+    environment:
+      DATABASE_ENGINE: django.db.backends.postgresql
+      DATABASE_NAME: mls_db
+      DATABASE_USER: mls_user
+      DATABASE_PASSWORD: mls_pg_secret_2026
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      CELERY_BROKER_URL: redis://:mls_redis_secret_2026@redis:6379/0
+      CELERY_RESULT_BACKEND: django-db
+      C_FORCE_ROOT: "false"
+    volumes:
+      - media_data:/app/media
+      - static_data:/app/staticfiles
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      web:
+        condition: service_started
+
   redis:
     image: redis:7-alpine
     container_name: mls_redis
@@ -8,6 +154,12 @@ services:
     command: redis-server --requirepass mls_redis_secret_2026
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "mls_redis_secret_2026", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   postgres:
     image: postgres:16-alpine
@@ -21,7 +173,15 @@ services:
       POSTGRES_PASSWORD: mls_pg_secret_2026
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mls_user -d mls_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 volumes:
+  media_data:
+  static_data:
   redis_data:
   postgres_data:

@@ -134,28 +134,33 @@ else:
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.postgresql",
-#         "NAME": "mls_db",
-#         "USER": "mls_user",
-#         "PASSWORD": "mls_pg_secret_2026",
-#         "HOST": "localhost",
-#         "PORT": "5432",
-#     }
-# }
+DATABASE_ENGINE = config("DATABASE_ENGINE", default="django.db.backends.sqlite3")
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+if DATABASE_ENGINE == "django.db.backends.sqlite3":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": DATABASE_ENGINE,
+            "NAME": config("DATABASE_NAME", default="mls_db"),
+            "USER": config("DATABASE_USER", default="mls_user"),
+            "PASSWORD": config("DATABASE_PASSWORD", default="mls_pg_secret_2026"),
+            "HOST": config("DATABASE_HOST", default="localhost"),
+            "PORT": config("DATABASE_PORT", default="5432"),
+        }
+    }
 
-CELERY_BROKER_URL = "redis://:mls_redis_secret_2026@localhost:6379/0"
+CELERY_BROKER_URL = config(
+    "CELERY_BROKER_URL", default="redis://:mls_redis_secret_2026@localhost:6379/0"
+)
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
-CELERY_RESULT_BACKEND = "django-db"
+CELERY_RESULT_BACKEND = config("CELERY_RESULT_BACKEND", default="django-db")
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers.DatabaseScheduler"
 CELERY_BEAT_SCHEDULE = {
     "remind-pending-work-daily": {
