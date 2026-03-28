@@ -31,14 +31,6 @@
                             <td style="padding: 3px 10px; color: #6b7280;">Due Date:</td>
                             <td style="padding: 3px 0; font-weight: bold;">{{ invoice.due_date|date:"d M Y" }}</td>
                         </tr>
-                        <tr>
-                            <td style="padding: 3px 10px; color: #6b7280;">Status:</td>
-                            <td style="padding: 3px 0;">
-                                <span style="display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: 0.2px; {% if invoice.status == 'PAID' %}background: #dcfce7; color: #15803d;{% elif invoice.status == 'OVERDUE' %}background: #fee2e2; color: #b91c1c;{% else %}background: #dbeafe; color: #1d4ed8;{% endif %}">
-                                    {{ invoice.get_status_display }}
-                                </span>
-                            </td>
-                        </tr>
                     </table>
                 </td>
             </tr>
@@ -127,7 +119,9 @@
     {% if invoice.terms %}
     <div style="margin-top: 24px; padding: 12px 14px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 4px;">
         <h4 style="margin: 0 0 6px; color: #111827;">Terms & Conditions:</h4>
-        <p style="margin: 0; color: #4b5563;">{{ invoice.terms }}</p>
+        <div style="margin: 0; color: #4b5563;" class="terms">
+            {{ terms_html|safe }}
+        </div>
     </div>
     {% endif %}
 
@@ -137,4 +131,29 @@
         <p style="margin: 0;">For any queries, contact us at {{ company_email }} or {{ company_phone }}</p>
     </div>
 </body>
+<style>
+.terms h1, .terms h2, .terms h3 {
+    font-size: 13px;
+    margin-top: 10px;
+    margin-bottom: 5px;
+}
+
+.terms ul {
+    padding-left: 18px;
+}
+
+.terms li {
+    margin-bottom: 4px;
+}
+
+.terms p {
+    margin-bottom: 6px;
+}
+
+.terms hr {
+    border: none;
+    border-top: 1px solid #d1d5db;
+    margin: 10px 0;
+}
+</style>
 </html>

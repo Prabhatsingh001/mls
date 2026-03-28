@@ -120,7 +120,11 @@ NPM_BIN_PATH = "C:\\Program Files\\nodejs\\npm.cmd"
 if DEBUG:
     SITE_DOMAIN = "127.0.0.1:8000"
     PROTOCOL = "http"
-    ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
+    ALLOWED_HOSTS = [
+        "127.0.0.1",
+        "localhost",
+        "eveline-correlatable-lonna.ngrok-free.dev",
+    ]
 else:
     SITE_DOMAIN = "url-ly.onrender.com"
     PROTOCOL = "https"

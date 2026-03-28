@@ -4,17 +4,18 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.sessions.models import Session
 from django.core.paginator import Paginator
-from django.db.models import Count, Q
 from django.db import transaction
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 
 from auditapp.models import AuditLog
-from auditapp.utils import _log_details
 from auditapp.tasks import record_audit_log_tasks
+from auditapp.utils import _log_details
 from authentication.decorators import role_required
 from authentication.models import CustomerProfile, TechnicianProfile, User
+from billing.models import CompanyConfig
 from customerapp.models import Feedback
 from services.models import (
     Category,
@@ -1026,3 +1027,57 @@ def admin_update_project_start_date(request, project_id):
         "adminapp:admin-review-details",
         job_request_id=project.job_request.pk,  # type: ignore
     )
+
+
+# future enforcement of internal notes for admin reference only - not visible to customers or technicians
+# @login_required()
+# @role_required([User.Role.ADMIN])
+# def admin_update_project_notes(request, project_id):
+#     """Update the internal notes of an existing project."""
+#     if request.method == "POST":
+#         project = get_object_or_404(Project, pk=project_id)
+#         notes = request.POST.get("notes", "").strip()
+#         project.notes = notes
+#         project.save(update_fields=["notes"])
+#         messages.success(
+#             request,
+#             f"Project PRJ-{project.pk} notes updated.",
+#         )
+#     return redirect(
+#         "adminapp:admin-review-details",
+#         job_request_id=project.job_request.pk,  # type: ignore
+#     )
+
+
+@login_required()
+@role_required([User.Role.ADMIN])
+def admin_create_or_update_terms_and_conditions(request):
+    config = CompanyConfig.objects.first()
+
+    if request.method == "POST":
+        content = request.POST.get("terms", "").strip()
+
+        if isinstance(content, tuple):
+            content = content[0]
+
+        if not content:
+            messages.error(request, "Terms and Conditions content cannot be empty.")
+            return redirect("adminapp:admin-create-or-update-terms-and-conditions")
+
+        if not config:
+            config = CompanyConfig.objects.create(terms_and_conditions=content)
+            messages.success(request, "Terms and Conditions created successfully.")
+        else:
+            config.terms_and_conditions = content
+            config.save(update_fields=["terms_and_conditions"])
+            messages.success(request, "Terms and Conditions updated successfully.")
+
+        return redirect("adminapp:admin-dashboard")
+
+    context = {
+        "terms": config.terms_and_conditions
+        if config and config.terms_and_conditions
+        else ""
+    }
+
+    return render(request, "adminapp/terms_and_conditions.html", context)

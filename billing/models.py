@@ -3,6 +3,7 @@ from django.db import models
 from django.utils import timezone
 from django.db import transaction
 from django.db.models import Sum
+from django.conf import settings
 
 
 class Invoice(models.Model):
@@ -83,7 +84,7 @@ class Invoice(models.Model):
         """Generate unique invoice number: INV-YYYY-NNNNN"""
         year = timezone.now().year
         #TODO optimize this by caching last invoice number per year, to avoid hitting DB every time
-        # also avoid race consition by using select_for_update in transaction when creating new invoice
+        # also avoid race condition by using select_for_update in transaction when creating new invoice
         last_invoice = (
             Invoice.objects.filter(invoice_number__startswith=f"INV-{year}-")
             .order_by("-invoice_number")
@@ -300,3 +301,25 @@ class RazorpayOrder(models.Model):
 
     def __str__(self):
         return f"Razorpay Order {self.order_id} for {self.invoice.invoice_number}"
+
+class CompanyConfig(models.Model):
+    """Singleton model to store company-wide billing settings."""
+    # future fields for company details, tax info, etc. can be added here
+    gst_number = models.CharField(max_length=20, default="29XXXXX1234X1Z5", help_text="GSTIN number for tax purposes")
+    pan_number = models.CharField(max_length=10, default="ABCDE1234F", help_text="PAN number for tax purposes")
+    company_name = models.CharField(max_length=255, default="MLS - Micro Labor Services")
+    company_address = models.TextField(default="123 Main Street, Bengaluru, Karnataka, India")
+    company_email = models.EmailField(default=settings.EMAIL_HOST_USER)
+    company_phone = models.CharField(max_length=15, default="+91-9876543210")
+    terms_and_conditions = models.TextField(blank=True, default="Payment is due immediately upon project completion.", help_text="Default terms and conditions for invoices")
+
+    class Meta:
+        verbose_name = "Company Configuration"
+
+    def __str__(self):
+        return "Company Configuration"
+
+    def save(self, *args, **kwargs):
+        if not self.pk and CompanyConfig.objects.exists():
+            raise ValueError("Only one CompanyConfig instance allowed.")
+        super().save(*args, **kwargs)

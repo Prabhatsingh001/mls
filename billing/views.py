@@ -67,7 +67,7 @@ def customer_invoice_detail(request, invoice_id):
     )
 
     # Check if there's an active Razorpay order
-    active_order = invoice.razorpay_orders.filter( # type: ignore
+    active_order = invoice.razorpay_orders.filter(  # type: ignore
         status=RazorpayOrder.Status.CREATED
     ).first()
 
@@ -87,14 +87,17 @@ def customer_invoice_detail(request, invoice_id):
 
 
 @login_required()
-@role_required([User.Role.CUSTOMER])
+@role_required([User.Role.CUSTOMER, User.Role.ADMIN])
 def customer_download_invoice_pdf(request, invoice_id):
     """Download invoice PDF."""
-    invoice = get_object_or_404(
-        Invoice,
-        pk=invoice_id,
-        customer=request.user,
-    )
+    if request.user.role == User.Role.CUSTOMER:
+        invoice = get_object_or_404(
+            Invoice,
+            pk=invoice_id,
+            customer=request.user,
+        )
+    else:
+        invoice = get_object_or_404(Invoice, pk=invoice_id)
 
     if not invoice.pdf_file:
         raise Http404("PDF not available yet. Please try again later.")
@@ -163,7 +166,9 @@ def payment_callback(request):
             return JsonResponse({"error": "Invalid payment signature"}, status=400)
 
         # Find the order
-        razorpay_order = RazorpayOrder.objects.select_for_update().get(order_id=razorpay_order_id)
+        razorpay_order = RazorpayOrder.objects.select_for_update().get(
+            order_id=razorpay_order_id
+        )
 
         # Ensure customer owns this invoice
         if razorpay_order.invoice.customer != request.user:
@@ -192,7 +197,6 @@ def payment_callback(request):
 def razorpay_webhook(request):
     """Handle Razorpay server-to-server webhook."""
     signature = request.headers.get("X-Razorpay-Signature")
-    print("Received webhook with signature:", signature)  # Debug log
 
     if not signature:
         return JsonResponse({"error": "Missing signature"}, status=400)
@@ -207,11 +211,11 @@ def razorpay_webhook(request):
         if event == "payment.captured":
             payment_entity = payload["payload"]["payment"]["entity"]
             razorpay_order_id = payment_entity.get("order_id")
-            print("Processing payment.captured for order:", razorpay_order_id)  # Debug log
             razorpay_payment_id = payment_entity.get("id")
             amount_paise = payment_entity.get("amount")
 
             from decimal import Decimal
+
             amount = Decimal(amount_paise) / 100
 
             with transaction.atomic():
@@ -222,11 +226,17 @@ def razorpay_webhook(request):
                 )
 
                 if not razorpay_order:
-                    logger.warning(f"Razorpay order not found for ID: {razorpay_order_id}")
-                    return JsonResponse({"status": "ok"})  # Acknowledge to prevent retries
+                    logger.warning(
+                        f"Razorpay order not found for ID: {razorpay_order_id}"
+                    )
+                    return JsonResponse(
+                        {"status": "ok"}
+                    )  # Acknowledge to prevent retries
 
-
-                if razorpay_order and razorpay_order.status != RazorpayOrder.Status.PAID:
+                if (
+                    razorpay_order
+                    and razorpay_order.status != RazorpayOrder.Status.PAID
+                ):
                     razorpay_order.status = RazorpayOrder.Status.PAID
                     razorpay_order.save(update_fields=["status"])
 
@@ -236,7 +246,7 @@ def razorpay_webhook(request):
                             "invoice": razorpay_order.invoice,
                             "amount": amount,
                             "method": Payment.Method.RAZORPAY,
-                            "razorpay_order_id": razorpay_order.pk, # this is a FK to RazorpayOrder, not the ID string
+                            "razorpay_order_id": razorpay_order.pk,  # this is a FK to RazorpayOrder, not the ID string
                             "status": Payment.Status.COMPLETED,
                             "payment_date": timezone.now(),
                         },
@@ -248,7 +258,7 @@ def razorpay_webhook(request):
                                 payment.pk
                             )  # type: ignore
                         )
-                        
+
         elif event == "payment.failed":
             payment_entity = payload["payload"]["payment"]["entity"]
             razorpay_order_id = payment_entity.get("order_id")
@@ -378,11 +388,11 @@ def admin_record_payment(request, invoice_id):
                 "method": method,
             },
         )
-        transaction.on_commit(lambda: record_audit_log_tasks.delay(log_details)) # type: ignore
+        transaction.on_commit(lambda: record_audit_log_tasks.delay(log_details))  # type: ignore
 
         # Send confirmation email
         transaction.on_commit(
-            lambda: send_payment_confirmation_email_task.delay(payment.pk) # type: ignore
+            lambda: send_payment_confirmation_email_task.delay(payment.pk)  # type: ignore
         )
 
         messages.success(request, f"Payment of Rs. {amount} recorded successfully.")
@@ -402,7 +412,7 @@ def admin_record_payment(request, invoice_id):
 def admin_resend_invoice(request, invoice_id):
     """Resend invoice email to customer."""
     invoice = get_object_or_404(Invoice, pk=invoice_id)
-    send_invoice_email_task.delay(invoice.pk) # type: ignore
+    send_invoice_email_task.delay(invoice.pk)  # type: ignore
 
     messages.success(
         request,
@@ -419,7 +429,9 @@ def admin_regenerate_pdf(request, invoice_id):
     from .tasks import generate_invoice_pdf_task
 
     invoice = get_object_or_404(Invoice, pk=invoice_id)
-    generate_invoice_pdf_task.delay(invoice.pk) # type: ignore
+    invoice.pdf_file.close()  # Close the file if it's open
+    invoice.pdf_file.delete(save=True)  # Delete old PDF
+    transaction.on_commit(lambda: generate_invoice_pdf_task.delay(invoice.pk))  # type: ignore
 
     messages.success(
         request,
@@ -450,7 +462,7 @@ def admin_cancel_invoice(request, invoice_id):
         description=f"Invoice {invoice.invoice_number} cancelled",
         target=invoice,
     )
-    transaction.on_commit(lambda: record_audit_log_tasks.delay(log_details)) # type: ignore
+    transaction.on_commit(lambda: record_audit_log_tasks.delay(log_details))  # type: ignore
 
     messages.success(request, f"Invoice {invoice.invoice_number} has been cancelled.")
     return redirect("billing:admin-invoice-detail", invoice_id=invoice_id)

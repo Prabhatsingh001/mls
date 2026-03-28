@@ -40,7 +40,8 @@ def generate_invoice_pdf_task(invoice_id):
         invoice_id: ID of the invoice to generate PDF for
     """
     from playwright.sync_api import sync_playwright
-    from .models import Invoice
+    from .models import Invoice, CompanyConfig
+    import markdown
 
     try:
         invoice = (
@@ -52,19 +53,29 @@ def generate_invoice_pdf_task(invoice_id):
             .get(pk=invoice_id)
         )
 
+        company_config = CompanyConfig.objects.first()
+
         if invoice.pdf_file:
             return invoice_id  # PDF already exists, skip generation
+        
+        terms_md = invoice.terms
+        if isinstance(terms_md, tuple):
+            terms_md = terms_md[0]  # Extract string from tuple if needed
+        terms_html = markdown.markdown(
+            terms_md, extensions=["extra", "sane_lists", "nl2br", "smarty"]
+        )
 
         # Render HTML template
         html_content = render_to_string(
             "billing/pdf/invoice.html",
             {
                 "invoice": invoice,
-                "company_name": "MLS - Micro Labor Services",
-                "company_address": "123 Service Lane, Tech City, India",
-                "company_phone": "+91 98765 43210",
-                "company_email": settings.EMAIL_HOST_USER,
-                "company_gstin": "29XXXXX1234X1Z5",
+                "company_name": company_config.company_name if company_config else "MLS - Micro Labor Services", # type: ignore
+                "company_address": company_config.company_address if company_config else "123 Main Street, Bengaluru, Karnataka, India", # type: ignore
+                "company_phone": company_config.company_phone if company_config else "+91 98765 43210", # type: ignore
+                "company_email": company_config.company_email if company_config else settings.EMAIL_HOST_USER, # type: ignore
+                "company_gstin": company_config.gst_number if company_config else "29XXXXX1234X1Z5", # type: ignore
+                "terms_html": terms_html,
             },
         )
 
@@ -108,8 +119,9 @@ def send_invoice_email_task(invoice_id):
     from notification.models import Notification
     from notification.services import notify_user
 
-    from .models import Invoice
+    from .models import Invoice, CompanyConfig
 
+    company_config = CompanyConfig.objects.first()
     invoice = Invoice.objects.select_related(
         "customer",
         "project__job_request__service",
@@ -126,7 +138,7 @@ def send_invoice_email_task(invoice_id):
         {
             "invoice": invoice,
             "view_url": view_url,
-            "company_name": "MLS - Micro Labor Services",
+            "company_name": company_config.company_name if company_config else "MLS - Micro Labor Services", # type: ignore
         },
     )
 
@@ -163,6 +175,7 @@ MLS - Micro Labor Services
             invoice.pdf_file.read(),
             "application/pdf",
         )
+        invoice.pdf_file.close()
 
     email.send(fail_silently=True)
 

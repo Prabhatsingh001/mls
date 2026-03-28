@@ -108,4 +108,9 @@ urlpatterns = [
         views.admin_update_project_start_date,
         name="admin-update-project-start-date",
     ),
+    path(
+       "terms-and-conditions/", 
+       views.admin_create_or_update_terms_and_conditions, 
+       name="admin-create-or-update-terms-and-conditions"  
+    )
 ]

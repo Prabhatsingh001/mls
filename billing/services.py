@@ -11,7 +11,8 @@ def create_invoice_for_project(project_id):
     This function handles all the business logic for invoice creation.
     """
     from services.models import Project
-
+    from .models import CompanyConfig
+    
     project = (
         Project.objects.select_related(
             "job_request__customer",
@@ -33,6 +34,7 @@ def create_invoice_for_project(project_id):
 
     # Create the invoice with immediate due date
     today = timezone.now().date()
+    company_config = CompanyConfig.objects.first()
     invoice = Invoice.objects.create(
         project=project,
         customer=customer,
@@ -41,7 +43,11 @@ def create_invoice_for_project(project_id):
         customer_phone=customer.phone_number or "",
         billing_address=project.job_request.site_address,
         due_date=today,  # Immediate payment
-        terms="Payment is due immediately upon project completion.",
+        terms=(
+            company_config.terms_and_conditions
+            if company_config
+            else "Payment is due immediately upon project completion."
+        ),
     )
 
     display_order = 0

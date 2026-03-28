@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from .models import Invoice, InvoiceLineItem, Payment, RazorpayOrder
+from .models import CompanyConfig, Invoice, InvoiceLineItem, Payment, RazorpayOrder
 
 
 class InvoiceLineItemInline(admin.TabularInline):
@@ -67,7 +67,6 @@ class InvoiceAdmin(admin.ModelAdmin):
                     "invoice_number",
                     "project",
                     "status",
-                    "issue_date",
                     "due_date",
                     "paid_date",
                 )
@@ -233,3 +232,7 @@ class RazorpayOrderAdmin(admin.ModelAdmin):
         )
 
     status_badge.short_description = "Status" # type: ignore
+
+@admin.register(CompanyConfig)
+class CompanyConfigAdmin(admin.ModelAdmin):
+    list_display = ("company_name", "pan_number", "company_email", "company_phone")
