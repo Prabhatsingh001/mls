@@ -46,11 +46,13 @@ RUN groupadd --system app && useradd --system --gid app --home-dir /app app
 COPY --from=builder /opt/venv /opt/venv
 COPY --chown=app:app . /app
 
-RUN playwright install --with-deps
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
-# Create media folder with proper permissions
+RUN playwright install chromium
+
 RUN mkdir -p /app/media/service_items && \
-    chown -R app:app /app/media
+    chown -R app:app /app/media && \
+    chown -R app:app /ms-playwright
 
 USER app
 
