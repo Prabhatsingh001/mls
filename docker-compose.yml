@@ -6,6 +6,7 @@ services:
     image: mls-app:latest
     container_name: mls_web
     restart: unless-stopped
+    user: app   # ✅ IMPORTANT FIX
     command: sh -c "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
     ports:
       - "8000:8000"
