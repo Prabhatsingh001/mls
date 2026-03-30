@@ -250,3 +250,48 @@ def send_phone_verification_sms(user_id, verification_code):
         "If you didn’t request this, ignore this message.\n\n— MLS Team"
     )
     send_sms(user.phone_number, message_body)
+
+
+@shared_task()
+def send_contact_message_email(contact_message_id):
+    """
+    Send an email to support when a contact message is submitted.
+
+    Args:
+        contact_message_id: UUID of the ContactMessage instance to email about
+    The email includes:
+        - The sender's name, email, phone number, and message
+        - A note that this is a contact request from the website
+    Uses the contact_message_email.html template for formatting the email content.
+    """
+    from .models import ContactMessage
+
+    contact_message = ContactMessage.objects.get(id=contact_message_id)
+    subject = "New Contact Message from MLS Website"
+    html_content = render_to_string(
+        "emails/contact_message_email.html",
+        {
+            "contact_message": contact_message,
+        },
+    )
+
+    text_content = f"""
+        New contact message received from the MLS website:
+
+        Name: {contact_message.name}
+        Email: {contact_message.email}
+        Phone Number: {contact_message.phone_number}
+        Message:
+        {contact_message.msg}
+
+        Please respond to the sender as soon as possible.
+    """
+
+    email = EmailMultiAlternatives(
+        subject,
+        text_content,
+        settings.EMAIL_HOST_USER,
+        [settings.SUPPORT_EMAIL],
+    )
+    email.attach_alternative(html_content, "text/html")
+    email.send(fail_silently=True)

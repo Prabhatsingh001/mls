@@ -48,7 +48,7 @@ COPY --chown=app:app . /app
 
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
-RUN playwright install chromium
+RUN playwright install --with-deps chromium
 
 RUN mkdir -p /app/media/service_items && \
     chown -R app:app /app/media && \

@@ -166,7 +166,7 @@ def payment_callback(request):
             return JsonResponse({"error": "Invalid payment signature"}, status=400)
 
         # Find the order
-        razorpay_order = RazorpayOrder.objects.select_for_update().get(
+        razorpay_order = RazorpayOrder.objects.get(
             order_id=razorpay_order_id
         )
 

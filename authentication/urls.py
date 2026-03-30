@@ -5,6 +5,7 @@ from . import views
 urlpatterns = [
     path("redirect-dashboard/", views.redirect_dashboard, name="redirect-dashboard"),
     path("account-blocked/", views.account_blocked, name="account-blocked"),
+    path("contact/", views.contact, name="contact"),
     path("register/", views.register, name="register"),
     path("activate/<uidb64>/<token>/", views.activate, name="activate"),
     path(
