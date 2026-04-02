@@ -1,4 +1,6 @@
 import logging
+import random
+import string
 
 from django.conf import settings
 from django.contrib import messages
@@ -387,8 +389,20 @@ def choose_role(request):
         role = request.POST.get("role")
 
         if role in User.Role.values:
-            request.user.role = role
-            request.user.save()
+            user = request.user
+            user.role = role
+            user.save()
+
+            if role == User.Role.CUSTOMER:
+                CustomerProfile.objects.get_or_create(
+                    user=user, 
+                    defaults={
+                        "project_otp": ''.join(random.choices(string.digits, k=6))
+                    },
+                )
+            elif role == User.Role.TECHNICIAN:
+                TechnicianProfile.objects.get_or_create(user=user)
+
             log_details = _log_details(
                 request,
                 category=AuditLog.Category.USER,
@@ -651,7 +665,10 @@ def edit_profile(request, user_id):
     if user.role == User.Role.TECHNICIAN:
         tech_profile, _ = TechnicianProfile.objects.get_or_create(user=user)
     elif user.role == User.Role.CUSTOMER:
-        cust_profile, _ = CustomerProfile.objects.get_or_create(user=user)
+        cust_profile, _ = CustomerProfile.objects.get_or_create(
+            user=user,
+            defaults={"project_otp": ''.join(random.choices(string.digits, k=6))}
+        )
         addresses = cust_profile.addresses.all()  # type: ignore
 
     if request.method == "POST":

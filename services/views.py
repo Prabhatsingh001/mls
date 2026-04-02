@@ -11,9 +11,10 @@ from auditapp.models import AuditLog
 from auditapp.utils import _log_details
 from auditapp.tasks import record_audit_log_tasks
 from authentication.decorators import role_required
-from authentication.models import TechnicianProfile, User
+from authentication.models import TechnicianProfile, User, CustomerProfile
 
 from .models import Project, ProjectExtraMaterial, ServiceItem, ServiceItemMapping
+from billing.models import Invoice
 
 
 @login_required()
@@ -274,10 +275,10 @@ def update_project_status(request, project_id):
     try:
         project = Project.objects.get(pk=project_id, technician=request.user)
     except Project.DoesNotExist:
-        return render(request, "404.html", status=404)
+        return redirect("services:project-details", project_id=project_id)
 
     new_status = request.POST.get("status")
-    if new_status not in (Project.Status.ONGOING, Project.Status.COMPLETED):
+    if new_status not in (Project.Status.ONGOING, Project.Status.PAYMENT_PENDING):
         messages.error(request, "Invalid status.")
         return redirect("services:project-details", project_id=project.pk)
 
@@ -288,12 +289,11 @@ def update_project_status(request, project_id):
     project.status = new_status
     if new_status == Project.Status.ONGOING and not project.start_date:
         project.start_date = timezone.now().date()
-    elif new_status == Project.Status.COMPLETED:
-        project.completion_date = timezone.now().date()
-        project.job_request.is_project_completed = True
-        project.job_request.save(update_fields=["is_project_completed"])
+        project.save(update_fields=["status", "start_date"])
+    elif new_status == Project.Status.PAYMENT_PENDING:
+        project.save(update_fields=["status"])
+        return redirect("services:project-completion", project_id=project.pk)
     project.save()
-
     log_details = _log_details(
         request,
         category=AuditLog.Category.PROJECT,
@@ -306,3 +306,33 @@ def update_project_status(request, project_id):
     label = dict(Project.Status.choices).get(new_status, new_status)
     messages.success(request, f"Project marked as {label}.")
     return redirect("services:project-details", project_id=project.pk)
+
+
+@login_required()
+@role_required([User.Role.TECHNICIAN])
+def project_completion(request, project_id):
+    if request.method == "POST":
+        project = get_object_or_404(Project, pk=project_id, technician=request.user)
+        customer_profile = get_object_or_404(CustomerProfile, user=project.job_request.customer)
+        invoice = Invoice.objects.filter(project_id=project.pk).first()
+        otp = request.POST.get("otp", "").strip()
+        
+        if otp == customer_profile.project_otp and  invoice.status == Invoice.Status.PAID: # type: ignore
+            project.status = Project.Status.COMPLETED
+            project.completion_date = timezone.now().date()
+            project.job_request.is_project_completed = True
+            project.save(update_fields=["status", "completion_date"])
+            project.job_request.save(update_fields=["is_project_completed"])
+            messages.success(request, "Project marked as completed.")
+            return redirect("services:project-details", project_id=project.pk)
+        
+        messages.error(request, "Invalid OTP or payment not completed. Cannot mark project as completed.")
+        return redirect("services:project-completion", project_id=project.pk)
+    else:
+        project = get_object_or_404(Project, pk=project_id, technician=request.user)
+        if project.status != Project.Status.PAYMENT_PENDING:
+            messages.error(request, "Only projects with payment pending can be marked as completed.")
+            return redirect("services:project-details", project_id=project.pk)
+        
+        return render(request, "services/project_completion.html", {"project": project})
+    

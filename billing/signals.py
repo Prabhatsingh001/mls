@@ -10,12 +10,12 @@ def generate_invoice_on_completion(sender, instance, created, **kwargs):
     """Generate invoice when project status changes to COMPLETED."""
     previous_status = getattr(instance, "_previous_status", None)
 
-    status_completed_now = (
-        instance.status == Project.Status.COMPLETED
-        and previous_status != Project.Status.COMPLETED
+    status_payment_pending_now = (
+        instance.status == Project.Status.PAYMENT_PENDING
+        and previous_status != Project.Status.PAYMENT_PENDING
     )
 
-    if not status_completed_now:
+    if not status_payment_pending_now:
         return
 
     # Check if invoice already exists

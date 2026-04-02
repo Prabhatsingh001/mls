@@ -6,7 +6,11 @@ app_name = "billing"
 
 urlpatterns = [
     # Customer URLs
-    path("invoices/", views.customer_invoices_list, name="customer-invoices"),
+    path(
+        "invoices/", 
+        views.customer_invoices_list, 
+        name="customer-invoices"
+    ),
     path(
         "invoice/<int:invoice_id>/",
         views.customer_invoice_detail,
@@ -22,10 +26,22 @@ urlpatterns = [
         views.initiate_payment,
         name="initiate-payment",
     ),
-    path("payment/callback/", views.payment_callback, name="payment-callback"),
-    path("payment/webhook/", views.razorpay_webhook, name="razorpay-webhook"),
+    path(
+        "payment/callback/", 
+        views.payment_callback, 
+        name="payment-callback"
+    ),
+    path(
+        "payment/webhook/", 
+        views.razorpay_webhook, 
+        name="razorpay-webhook"
+    ),
     # Admin URLs
-    path("admin/invoices/", views.admin_invoices_list, name="admin-invoices"),
+    path(
+        "admin/invoices/", 
+        views.admin_invoices_list, 
+        name="admin-invoices"
+    ),
     path(
         "admin/invoice/<int:invoice_id>/",
         views.admin_invoice_detail,

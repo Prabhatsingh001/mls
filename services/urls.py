@@ -3,6 +3,7 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    path("join/", views.join_as_technician, name="join-as-technician"),
     path("dashboard/", views.tech_dashboard, name="tech-dashboard"),
     path(
         "toggle-availability/",
@@ -20,6 +21,11 @@ urlpatterns = [
         name="update-project-status",
     ),
     path(
+        "project/<int:project_id>/mark-completed/",
+        views.project_completion,
+        name="project-completion",
+    ),
+    path(
         "project/<int:project_id>/extra-materials/add/",
         views.add_project_extra_material,
         name="add-project-extra-material",
@@ -34,5 +40,4 @@ urlpatterns = [
         views.delete_project_extra_material,
         name="delete-project-extra-material",
     ),
-    path("join/", views.join_as_technician, name="join-as-technician"),
 ]

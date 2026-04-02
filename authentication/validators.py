@@ -1,5 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
+from PIL import Image
 # from .models import User
 
 
@@ -8,6 +9,13 @@ def validate_image_size(file):
     if file.size > max_size:
         raise ValidationError(_("Image file size should not exceed 10MB."))
 
+
+def validate_image(file):
+    try:
+        img = Image.open(file)
+        img.verify()
+    except Exception:
+        raise ValueError("Invalid image file")
 
 # def validate_role(role, allowed_roles):
 #     if role not in allowed_roles:

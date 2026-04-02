@@ -253,6 +253,10 @@ def razorpay_webhook(request):
                     )
 
                     if created:
+                        payment.invoice.status = Invoice.Status.PAID
+                        payment.invoice.amount_paid = amount
+                        payment.invoice.amount_due = payment.invoice.amount_due - amount
+                        payment.invoice.save(update_fields=["status", "amount_paid", "amount_due"])
                         transaction.on_commit(
                             lambda: send_payment_confirmation_email_task.delay(
                                 payment.pk

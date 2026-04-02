@@ -1,0 +1,141 @@
+{% extends "index.html" %}
+
+{% block title %}Complete PRJ-{{ project.pk }} — MLS{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl min-h-screen mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+	<a href="{% url 'services:project-details' project.pk %}" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition mb-6">
+		<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+			<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/>
+		</svg>
+		Back to Project Details
+	</a>
+
+	<div class="rounded-lg border border-gray-200 bg-white p-6 mb-6">
+		<div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+			<div>
+				<h1 class="text-xl sm:text-2xl font-bold text-gray-800">Complete Project PRJ-{{ project.pk }}</h1>
+				<p class="text-sm text-gray-500 mt-1">Review all details and enter the OTP shared by the customer to finish the project.</p>
+			</div>
+			<div>
+				<span class="inline-flex items-center rounded-full bg-indigo-100 px-3 py-1 text-xs font-medium text-indigo-700">
+					Current Status: {{ project.get_status_display }}
+				</span>
+			</div>
+		</div>
+	</div>
+
+	<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+		<div class="lg:col-span-2 space-y-6">
+			<div class="rounded-lg border border-gray-200 bg-white p-6">
+				<h2 class="text-sm font-semibold text-gray-800 mb-4">Project Information</h2>
+				<dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+					<div>
+						<dt class="text-gray-500">Project ID</dt>
+						<dd class="font-medium text-gray-800">PRJ-{{ project.pk }}</dd>
+					</div>
+					<div>
+						<dt class="text-gray-500">Service</dt>
+						<dd class="font-medium text-gray-800">{{ project.job_request.service.title }}</dd>
+					</div>
+					<div>
+						<dt class="text-gray-500">Category</dt>
+						<dd class="font-medium text-gray-800">{{ project.job_request.service.category.name }}</dd>
+					</div>
+					<div>
+						<dt class="text-gray-500">Quoted Amount</dt>
+						<dd class="font-semibold text-gray-800">&#8377;{{ project.quoted_amount }}</dd>
+					</div>
+					<div>
+						<dt class="text-gray-500">Preferred Date</dt>
+						<dd class="font-medium text-gray-800">{{ project.job_request.preferred_date|date:"M d, Y" }}</dd>
+					</div>
+					<div>
+						<dt class="text-gray-500">Start Date</dt>
+						<dd class="font-medium text-gray-800">{% if project.start_date %}{{ project.start_date|date:"M d, Y" }}{% else %}Not started{% endif %}</dd>
+					</div>
+					<div>
+						<dt class="text-gray-500">Created On</dt>
+						<dd class="font-medium text-gray-800">{{ project.job_request.created_at|date:"M d, Y · h:i A" }}</dd>
+					</div>
+					<div>
+						<dt class="text-gray-500">Assigned Technician</dt>
+						<dd class="font-medium text-gray-800">{{ project.technician.full_name|default:project.technician.email }}</dd>
+					</div>
+				</dl>
+			</div>
+
+			<div class="rounded-lg border border-gray-200 bg-white p-6">
+				<h2 class="text-sm font-semibold text-gray-800 mb-4">Customer Information</h2>
+				<dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+					<div>
+						<dt class="text-gray-500">Name</dt>
+						<dd class="font-medium text-gray-800">{{ project.job_request.customer.full_name }}</dd>
+					</div>
+					<div>
+						<dt class="text-gray-500">Email</dt>
+						<dd class="font-medium text-gray-800">{{ project.job_request.customer.email }}</dd>
+					</div>
+					<div>
+						<dt class="text-gray-500">Phone</dt>
+						<dd class="font-medium text-gray-800">{{ project.job_request.customer.phone_number|default:"Not provided" }}</dd>
+					</div>
+					<div class="sm:col-span-2">
+						<dt class="text-gray-500">Site Address</dt>
+						<dd class="font-medium text-gray-800">{{ project.job_request.site_address }}</dd>
+					</div>
+				</dl>
+			</div>
+
+			<div class="rounded-lg border border-gray-200 bg-white p-6">
+				<h2 class="text-sm font-semibold text-gray-800 mb-3">Work Description</h2>
+				<p class="text-sm text-gray-700 whitespace-pre-line">{{ project.job_request.description }}</p>
+				{% if project.notes %}
+				<div class="mt-4 rounded-md border border-yellow-200 bg-yellow-50 p-3">
+					<h3 class="text-xs font-semibold uppercase tracking-wide text-yellow-800">Technician Notes</h3>
+					<p class="mt-1 text-sm text-yellow-900 whitespace-pre-line">{{ project.notes }}</p>
+				</div>
+				{% endif %}
+			</div>
+		</div>
+
+		<div class="lg:col-span-1">
+			<div class="rounded-lg border border-gray-200 bg-white p-6 sticky top-6">
+				<h2 class="text-base font-semibold text-gray-800">Enter Customer OTP</h2>
+				<p class="text-sm text-gray-500 mt-1 mb-4">
+					Ask the customer for the project completion OTP. The project can be marked completed only with a valid OTP.
+				</p>
+
+				<form method="post" class="space-y-4">
+					{% csrf_token %}
+					<div>
+						<label for="otp" class="block text-sm font-medium text-gray-700 mb-1">Customer OTP</label>
+						<input
+							type="text"
+							id="otp"
+							name="otp"
+							inputmode="numeric"
+							pattern="[0-9]{4,6}"
+							maxlength="6"
+							required
+							placeholder="Enter OTP"
+							class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300"
+						>
+						<p class="mt-1 text-xs text-gray-500">Use the OTP exactly as provided by the customer.</p>
+					</div>
+
+					<button type="submit" class="w-full rounded-md bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 transition">
+						Verify OTP and Complete Project
+					</button>
+				</form>
+
+				<div class="mt-4 rounded-md border border-blue-200 bg-blue-50 p-3">
+					<p class="text-xs text-blue-800">
+						Completion requires a valid OTP and completed payment status.
+					</p>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}

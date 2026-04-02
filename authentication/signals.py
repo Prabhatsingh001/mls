@@ -1,3 +1,6 @@
+import string
+import random
+
 from django.dispatch import receiver
 from django.db.models.signals import post_save
 from .models import CustomerProfile, User, TechnicianProfile
@@ -25,21 +28,18 @@ def send_email(sender, instance, created, **kwargs):
 
 
 @receiver(post_save, sender=User)
-def create_profile(sender, instance, created, **kwargs):
-    """
-    Create a user profile after a new user is created.
+def create_profile(sender, instance, **kwargs):
+    try:
+        if instance.role == User.Role.CUSTOMER and not hasattr(
+            instance, "customer_profile"
+        ):
+            otp_code = ''.join(random.choices(string.digits, k=6))
+            CustomerProfile.objects.create(user=instance, otp_code=otp_code)
 
-    Args:
-        sender: The model class (User)
-        instance: The actual User instance that was saved
-        created: Boolean indicating if this is a new user
-        **kwargs: Additional signal arguments
-    This handler is triggered after user creation and can be used to
-    create related profile models or perform additional setup.
-    """
-    if created:
-        if instance.role == User.Role.CUSTOMER:
-            CustomerProfile.objects.create(user=instance)
-            
-        if instance.role == User.Role.TECHNICIAN:
+        elif instance.role == User.Role.TECHNICIAN and not hasattr(
+            instance, "technician_profile"
+        ):
             TechnicianProfile.objects.create(user=instance)
+
+    except Exception as e:
+        print(f"Error creating profile: {e}")

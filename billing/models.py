@@ -302,6 +302,7 @@ class RazorpayOrder(models.Model):
     def __str__(self):
         return f"Razorpay Order {self.order_id} for {self.invoice.invoice_number}"
 
+
 class CompanyConfig(models.Model):
     """Singleton model to store company-wide billing settings."""
     # future fields for company details, tax info, etc. can be added here

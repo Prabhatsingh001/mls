@@ -6,7 +6,8 @@ from django.contrib.auth.models import (
 )
 from django.core.validators import FileExtensionValidator
 from django.utils import timezone
-from .validators import validate_image_size
+from .validators import validate_image_size, validate_image
+from .utils import user_profile_image_path, user_aadhar_image_path
 import random
 import string
 
@@ -91,21 +92,23 @@ class TechnicianProfile(models.Model):
     experience_years = models.PositiveIntegerField(default=0)
     address = models.CharField(max_length=255, blank=True)
     profile_picture = models.ImageField(
-        upload_to="profile_pictures/",
+        upload_to=user_profile_image_path,
         null=True,
         blank=True,
         validators=[
-            FileExtensionValidator(allowed_extensions=["jpg", "jpeg", "png"]),
+            FileExtensionValidator(allowed_extensions=["jpg", "jpeg", "png", "webp"]),
             validate_image_size,
+            validate_image,
         ],
     )
     aadhar_image = models.ImageField(
-        upload_to="aadhar_images/",
+        upload_to=user_aadhar_image_path,
         null=True,
         blank=True,
         validators=[
-            FileExtensionValidator(allowed_extensions=["jpg", "jpeg", "png"]),
+            FileExtensionValidator(allowed_extensions=["jpg", "jpeg", "png", "webp"]),
             validate_image_size,
+            validate_image,
         ],
     )
     verification_status = models.CharField(
@@ -118,6 +121,20 @@ class TechnicianProfile(models.Model):
 
     def get_verification_status_display(self):
         return self.VerificationStatus(self.verification_status).label
+    
+    def save(self, *args, **kwargs):
+        # If the technician is blacklisted, also set the related user as blocked
+        if self.verification_status == self.VerificationStatus.BLACKLISTED:
+            self.user.is_blocked = True
+            self.user.save(update_fields=["is_blocked"])
+        elif self.user.is_blocked and self.verification_status != self.VerificationStatus.BLACKLISTED:
+            # If the technician is not blacklisted but the user is currently blocked, unblock the user
+            self.user.is_blocked = False
+            self.user.save(update_fields=["is_blocked"])
+
+        
+
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Technician Profile for {self.user.full_name}"
@@ -129,6 +146,10 @@ class CustomerProfile(models.Model):
     user = models.OneToOneField(
         User, on_delete=models.CASCADE, related_name="customer_profile"
     )
+    project_otp = models.CharField(max_length=6, blank=True, null=True)
+    # otp is generated and remains static for every customer and is used for verifying the project completion by the technician. 
+    # This is done to prevent any fraudulent activities by the technicians and to ensure that the project is completed by the right technician. 
+    # The OTP is generated when the customer signs up creates a customer profile and is saved and is used when the technician marks the project as completed.
     created_at = models.DateField(auto_now_add=True)
 
     def __str__(self):
