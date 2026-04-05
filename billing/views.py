@@ -25,7 +25,7 @@ from .razorpay import (
     verify_payment_signature,
     verify_webhook_signature,
 )
-from .tasks import send_invoice_email_task, send_payment_confirmation_email_task
+from .tasks import send_invoice_email_task, generate_payment_confirmation_pdf_task
 
 logger = logging.getLogger(__name__)
 
@@ -258,8 +258,8 @@ def razorpay_webhook(request):
                         payment.invoice.amount_due = payment.invoice.amount_due - amount
                         payment.invoice.save(update_fields=["status", "amount_paid", "amount_due"])
                         transaction.on_commit(
-                            lambda: send_payment_confirmation_email_task.delay(
-                                payment.pk
+                            lambda: generate_payment_confirmation_pdf_task.delay(
+                                payment.invoice.pk
                             )  # type: ignore
                         )
 
@@ -396,7 +396,7 @@ def admin_record_payment(request, invoice_id):
 
         # Send confirmation email
         transaction.on_commit(
-            lambda: send_payment_confirmation_email_task.delay(payment.pk)  # type: ignore
+            lambda: generate_payment_confirmation_pdf_task.delay(payment.invoice.pk)  # type: ignore
         )
 
         messages.success(request, f"Payment of Rs. {amount} recorded successfully.")

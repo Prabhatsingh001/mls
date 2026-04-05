@@ -1,3 +1,4 @@
+# ===================== BUILDER =====================
 FROM python:3.10-slim AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -24,7 +25,6 @@ RUN pip install --upgrade pip && pip install -r /app/requirements.docker.txt
 
 
 # ===================== RUNTIME =====================
-
 FROM python:3.10-slim AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -36,8 +36,16 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# 🔥 Add WeasyPrint system dependencies here
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
+    libcairo2 \
+    libpango-1.0-0 \
+    libpangoft2-1.0-0 \
+    libgdk-pixbuf-2.0-0 \
+    libffi-dev \
+    shared-mime-info \
+    fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 
 # Create app user
@@ -46,13 +54,9 @@ RUN groupadd --system app && useradd --system --gid app --home-dir /app app
 COPY --from=builder /opt/venv /opt/venv
 COPY --chown=app:app . /app
 
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-
-RUN playwright install --with-deps chromium
-
+# Create media directory
 RUN mkdir -p /app/media/service_items && \
-    chown -R app:app /app/media && \
-    chown -R app:app /ms-playwright
+    chown -R app:app /app/media
 
 USER app
 

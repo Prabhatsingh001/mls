@@ -21,6 +21,7 @@ venv/
 ENV/
 env/
 *.pem
+.cache/
 
 
 # IDE / Editor

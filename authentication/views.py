@@ -130,6 +130,9 @@ def contact(request):
         },
     )
 
+def about(request):
+    return render(request, "about.html")
+
 
 # def register(request):
 #     allowed_roles = dict(User.Role.choices)
@@ -783,12 +786,17 @@ def delete_account(request, user_id):
     if request.user.pk != user.pk:
         messages.error(request, "You can only delete your own account.")
         return redirect("a:profile", user_id=user.pk)
-
-    if request.method == "POST":
-        auth_logout(request)
-        user.delete()
-        messages.success(request, "Your account has been deleted.")
-        return redirect("a:login")
+    
+    try:
+        if request.method == "POST":
+            auth_logout(request)
+            user.delete()
+            messages.success(request, "Your account has been deleted.")
+            return redirect("a:login")
+    except Exception as e:
+        logger.error(f"Error deleting account for user {user.email}: {e}")
+        messages.error(request, "An error occurred while deleting your account. Please try again later.")
+        return redirect("a:profile", user_id=user.pk)
 
     return render(request, "confirm_delete_account.html", {"user": user})
 

@@ -10,6 +10,9 @@ from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
+from django.shortcuts import get_object_or_404
+from weasyprint import HTML
+import markdown
 
 
 @shared_task()
@@ -26,22 +29,14 @@ def create_invoice_task(project_id):
 
     if invoice:
         # Queue PDF generation
-        generate_invoice_pdf_task.delay(invoice.pk) # type: ignore
+        generate_amount_due_receipt_pdf_task(invoice.pk) # type: ignore
 
     return invoice.pk if invoice else None
 
 
-@shared_task()
-def generate_invoice_pdf_task(invoice_id):
-    """
-    Generate PDF for an invoice asynchronously.
-
-    Args:
-        invoice_id: ID of the invoice to generate PDF for
-    """
-    from playwright.sync_api import sync_playwright
+@shared_task(bind=True, max_retries=3)
+def generate_invoice_pdf_task(self, invoice_id, pdf_name="payment_pending"):
     from .models import Invoice, CompanyConfig
-    import markdown
 
     try:
         invoice = (
@@ -55,55 +50,96 @@ def generate_invoice_pdf_task(invoice_id):
 
         company_config = CompanyConfig.objects.first()
 
+        # Skip if already exists
         if invoice.pdf_file:
-            return invoice_id  # PDF already exists, skip generation
-        
+            return invoice_id
+
+        # Markdown → HTML
         terms_md = invoice.terms
         if isinstance(terms_md, tuple):
-            terms_md = terms_md[0]  # Extract string from tuple if needed
+            terms_md = terms_md[0]
+
         terms_html = markdown.markdown(
-            terms_md, extensions=["extra", "sane_lists", "nl2br", "smarty"]
+            terms_md,
+            extensions=["extra", "sane_lists", "nl2br", "smarty"],
         )
 
-        # Render HTML template
+        # Render template
         html_content = render_to_string(
             "billing/pdf/invoice.html",
             {
                 "invoice": invoice,
-                "company_name": company_config.company_name if company_config else "MLS - Micro Labor Services", # type: ignore
-                "company_address": company_config.company_address if company_config else "123 Main Street, Bengaluru, Karnataka, India", # type: ignore
-                "company_phone": company_config.company_phone if company_config else "+91 98765 43210", # type: ignore
-                "company_email": company_config.company_email if company_config else settings.EMAIL_HOST_USER, # type: ignore
-                "company_gstin": company_config.gst_number if company_config else "29XXXXX1234X1Z5", # type: ignore
+                "company_name": company_config.company_name if company_config else "MLS - Micro Labor Services",
+                "company_address": company_config.company_address
+                if company_config
+                else "Default Address",
+                "company_phone": company_config.company_phone
+                if company_config
+                else "+91 XXXXX XXXXX",
+                "company_email": company_config.company_email
+                if company_config
+                else settings.EMAIL_HOST_USER,
+                "company_gstin": company_config.gst_number
+                if company_config
+                else "GSTIN",
                 "terms_html": terms_html,
             },
         )
 
-        with sync_playwright() as p:
-            browser = p.chromium.launch()
-            page = browser.new_page()
-            page.set_content(html_content, wait_until="networkidle")
-            pdf_bytes = page.pdf(
-                format = "A4",
-                margin={
-                    "top": "1.5cm",
-                    "right": "1.5cm",
-                    "bottom": "1.5cm",
-                    "left": "1.5cm",
-                },
-            )
-            browser.close()
+        # 🔥 WeasyPrint PDF generation
+        pdf_bytes = HTML(
+            string=html_content,
+            base_url=settings.BASE_DIR,  # IMPORTANT for static/media files
+        ).write_pdf(
+            stylesheets=None  # optional CSS files
+        )
 
-        filename = f"{invoice.invoice_number}.pdf"
-        invoice.pdf_file.save(filename, ContentFile(pdf_bytes), save=False)
+        # Save PDF
+        filename = f"{invoice.invoice_number}-{pdf_name}.pdf"
+        invoice.pdf_file.save(filename, ContentFile(pdf_bytes), save=False) # type: ignore
         invoice.save(update_fields=["pdf_file"])
 
-        # After PDF is generated, send email
-        send_invoice_email_task.delay(invoice_id) # type: ignore
         return invoice_id
+
     except Exception as e:
-        # Log the error (you can use Django's logging framework)
         print(f"Error generating PDF for invoice {invoice_id}: {e}")
+        raise self.retry(exc=e, countdown=5)
+
+
+@shared_task()
+def generate_amount_due_receipt_pdf_task(invoice_id):
+    """
+    Generate amount due receipt PDF for an invoice asynchronously.
+
+    Args:
+        invoice_id: ID of the invoice to generate receipt for
+    """
+    generate_invoice_pdf_task(invoice_id, pdf_name="amount_due_receipt") # type: ignore
+    send_invoice_email_task(invoice_id) # type: ignore
+
+
+@shared_task()
+def generate_payment_confirmation_pdf_task(invoice_id):
+    """
+    Generate payment confirmation PDF for an invoice asynchronously.
+
+    Args:
+        invoice_id: ID of the invoice to generate payment confirmation for
+    """
+    from .models import Invoice,Payment
+    try:
+        invoice = Invoice.objects.get(pk=invoice_id)
+        if invoice.pdf_file:
+            invoice.pdf_file.close()  # Close existing PDF file if open
+            invoice.pdf_file.delete()  # Delete existing PDF file
+            invoice.save(update_fields=["pdf_file"])  # Clear the pdf_file field
+        generate_invoice_pdf_task(invoice_id, pdf_name="payment_confirmation") # type: ignore
+        payment = get_object_or_404(Payment, invoice_id=invoice_id)
+        send_payment_confirmation_email_task(payment.pk) # type: ignore
+    except Invoice.DoesNotExist:
+        print(f"Invoice with ID {invoice_id} does not exist.")
+    except Exception as e:
+        print(f"Error generating payment confirmation PDF for invoice {invoice_id}: {e}")
         raise
 
 
@@ -171,7 +207,7 @@ MLS - Micro Labor Services
     if invoice.pdf_file:
         invoice.pdf_file.seek(0)
         email.attach(
-            f"{invoice.invoice_number}.pdf",
+            f"{invoice.invoice_number}-amount-due-receipt.pdf",
             invoice.pdf_file.read(),
             "application/pdf",
         )
@@ -245,6 +281,15 @@ MLS - Micro Labor Services
         [invoice.customer_email],
     )
     email.attach_alternative(html_content, "text/html")
+    # Attach PDF if available
+    if invoice.pdf_file:
+        invoice.pdf_file.seek(0)
+        email.attach(
+            f"{invoice.invoice_number}-amount-paid.pdf",
+            invoice.pdf_file.read(),
+            "application/pdf",
+        )
+        invoice.pdf_file.close()
     email.send(fail_silently=True)
 
     # Create in-app notification
