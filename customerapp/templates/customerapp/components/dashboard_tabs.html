@@ -6,6 +6,7 @@
             {% if tab == 'services' %}Browse Services
             {% elif tab == 'my-requests' %}My Requests
             {% elif tab == 'my-projects' %}My Projects
+            {% elif tab == 'invoices' %}Invoices
             {% else %}Dashboard
             {% endif %}
         </span>
@@ -39,6 +40,11 @@
                 {% if tab == 'my-projects' %}bg-gray-100 text-gray-800{% else %}text-gray-500 hover:bg-gray-50 hover:text-gray-700{% endif %}">
                 My Projects
             </a>
+            <a href="?tab=invoices"
+                class="rounded px-3 py-2 text-sm font-medium transition
+                {% if tab == 'invoices' %}bg-gray-100 text-gray-800{% else %}text-gray-500 hover:bg-gray-50 hover:text-gray-700{% endif %}">
+                Invoices
+            </a>
         </div>
     </div>
 
@@ -64,6 +70,13 @@
             {% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300
             {% endif %}">
             My Projects
+        </a>
+        <a href="?tab=invoices"
+            class="pb-3 text-sm font-medium border-b-2 transition
+            {% if tab == 'invoices' %}border-gray-800 text-gray-800
+            {% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300
+            {% endif %}">
+            Invoices
         </a>
     </nav>
 </div>

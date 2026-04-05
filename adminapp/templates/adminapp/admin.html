@@ -56,5 +56,9 @@
         {% include "adminapp/tabs/audit_trails_tab.html" %}
     {% endif %}
 
+    {% if tab == "invoices" %}
+        {% include "billing/admin/invoices_list.html" %}
+    {% endif %}
+
 </div>
 {% endblock %}

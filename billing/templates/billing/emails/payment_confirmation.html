@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Received - {{ invoice.invoice_number }}</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #374151; background-color: #f3f4f6;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+        <!-- Header -->
+        <tr>
+            <td style="background-color: #059669; padding: 30px; text-align: center;">
+                <div style="width: 60px; height: 60px; background-color: rgba(255,255,255,0.2); border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center;">
+                    <span style="font-size: 30px; text-align: center;">✓</span>
+                </div>
+                <h1 style="margin: 0; color: #ffffff; font-size: 24px;">Payment Received</h1>
+                <p style="margin: 10px 0 0; color: rgba(255,255,255,0.8); font-size: 14px;">Thank you for your payment!</p>
+            </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+            <td style="padding: 30px;">
+                <p style="margin: 0 0 20px;">Dear {{ invoice.customer_name }},</p>
+
+                <p style="margin: 0 0 20px;">We have successfully received your payment. Here are the details:</p>
+
+                <!-- Payment Details -->
+                <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; border-radius: 8px; margin-bottom: 20px;">
+                    <tr>
+                        <td style="padding: 20px;">
+                            <table width="100%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td style="padding: 8px 0; color: #6b7280;">Amount Paid:</td>
+                                    <td style="padding: 8px 0; text-align: right; font-weight: bold; font-size: 18px; color: #059669;">Rs. {{ payment.amount }}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #6b7280;">Payment Method:</td>
+                                    <td style="padding: 8px 0; text-align: right;">{{ payment.get_method_display }}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #6b7280;">Transaction ID:</td>
+                                    <td style="padding: 8px 0; text-align: right;">{{ payment.transaction_id|default:payment.razorpay_payment_id|default:"N/A" }}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #6b7280;">Date & Time:</td>
+                                    <td style="padding: 8px 0; text-align: right;">{{ payment.payment_date|date:"F d, Y h:i A" }}</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2" style="border-top: 1px solid #e5e7eb; padding-top: 10px; margin-top: 10px;"></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #6b7280;">Invoice Number:</td>
+                                    <td style="padding: 8px 0; text-align: right; font-weight: bold;">{{ invoice.invoice_number }}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #6b7280;">Invoice Status:</td>
+                                    <td style="padding: 8px 0; text-align: right;">
+                                        {% if invoice.is_paid %}
+                                        <span style="display: inline-block; padding: 4px 12px; background-color: #d1fae5; color: #065f46; border-radius: 4px; font-weight: bold; font-size: 12px;">FULLY PAID</span>
+                                        {% else %}
+                                        <span style="display: inline-block; padding: 4px 12px; background-color: #fef3c7; color: #92400e; border-radius: 4px; font-weight: bold; font-size: 12px;">Rs. {{ invoice.amount_due }} remaining</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+
+                <p style="margin: 0 0 20px;">If you have any questions about this payment, please contact our support team.</p>
+
+                <p style="margin: 0;">Thank you for choosing {{ company_name }}!</p>
+            </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+            <td style="background-color: #f9fafb; padding: 20px 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+                <p style="margin: 0 0 5px; color: #6b7280; font-size: 12px;">{{ company_name }}</p>
+                <p style="margin: 0; color: #9ca3af; font-size: 11px;">This is an automated email. Please do not reply directly to this message.</p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

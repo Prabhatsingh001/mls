@@ -1,0 +1,126 @@
+{% extends "index.html" %}
+
+{% block title %}Contact Us - MLS{% endblock %}
+
+{% block content %}
+<section class="relative overflow-hidden bg-white">
+	<div class="absolute inset-x-0 top-0 h-52 bg-linear-to-b from-gray-100 to-white pointer-events-none"></div>
+
+	<div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
+		<div class="max-w-2xl">
+			<span class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
+				<span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+				Usually replies in under 24 hours
+			</span>
+			<h1 class="mt-4 text-3xl sm:text-4xl font-bold tracking-tight text-gray-900">Contact the MLS Team</h1>
+			<p class="mt-3 text-sm sm:text-base text-gray-600 leading-relaxed max-w-xl">
+				Have a question about bookings, payments, or technician onboarding? Send us a message and our support team will get back to you quickly.
+			</p>
+		</div>
+
+		<div class="mt-10 grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8 items-start">
+			<div class="lg:col-span-3 rounded-2xl border border-gray-200 bg-white shadow-sm p-5 sm:p-7">
+				<h2 class="text-lg font-semibold text-gray-900">Send a Message</h2>
+				<p class="mt-1 text-sm text-gray-500">Fill in the form and we will contact you as soon as possible.</p>
+
+				<form method="post" action="{% url 'a:contact' %}" class="mt-6 space-y-5">
+					{% csrf_token %}
+
+					<div>
+						<label for="name" class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+						<input
+							type="text"
+							name="name"
+							id="name"
+							required
+							value="{{ form_name }}"
+							placeholder="Your full name"
+							class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+						>
+					</div>
+
+					<div>
+						<label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+						<input
+							type="email"
+							name="email"
+							id="email"
+							required
+							value="{{ form_email }}"
+							placeholder="you@example.com"
+							class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+						>
+					</div>
+
+                    <div>
+                        <label for="phone_number" class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                        <input
+                            type="tel"
+                            name="phone_number"
+                            id="phone_number"
+                            value="{{ form_phone_number }}"
+                            placeholder="Your phone number"
+                            class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+                        >
+                    </div>
+
+					<div>
+						<label for="message" class="block text-sm font-medium text-gray-700 mb-1">Message</label>
+						<textarea
+							name="message"
+							id="message"
+							rows="6"
+							required
+							placeholder="Tell us how we can help"
+							class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+						>{{ form_message }}</textarea>
+					</div>
+
+					<button
+						type="submit"
+						class="inline-flex w-full sm:w-auto items-center justify-center rounded-lg bg-gray-800 px-6 py-2.5 text-sm font-medium text-white hover:bg-gray-700 active:bg-gray-900 transition"
+					>
+						Submit
+					</button>
+				</form>
+			</div>
+
+			<aside class="lg:col-span-2 space-y-4">
+				<div class="rounded-2xl border border-gray-200 bg-gray-50 p-5">
+					<h3 class="text-sm font-semibold text-gray-900">Why people choose MLS</h3>
+					<ul class="mt-4 space-y-3 text-sm text-gray-600">
+						<li class="flex items-start gap-2">
+							<span class="mt-1 h-2 w-2 rounded-full bg-emerald-500"></span>
+							500+ verified technicians across multiple home services.
+						</li>
+						<li class="flex items-start gap-2">
+							<span class="mt-1 h-2 w-2 rounded-full bg-emerald-500"></span>
+							10k+ completed jobs with consistently high customer ratings.
+						</li>
+						<li class="flex items-start gap-2">
+							<span class="mt-1 h-2 w-2 rounded-full bg-emerald-500"></span>
+							Secure billing and transparent pricing before every booking.
+						</li>
+					</ul>
+				</div>
+
+				<div class="rounded-2xl border border-gray-200 bg-white p-5">
+					<h3 class="text-sm font-semibold text-gray-900">Support details</h3>
+					<div class="mt-4 space-y-3 text-sm text-gray-600">
+						<p><span class="font-medium text-gray-800">Email:</span> support@mls.com</p>
+						<p><span class="font-medium text-gray-800">Hours:</span> Monday to Saturday, 9:00 AM to 8:00 PM</p>
+						<p><span class="font-medium text-gray-800">Average response:</span> under 24 hours</p>
+					</div>
+				</div>
+
+				<div class="rounded-2xl border border-gray-200 bg-gray-900 p-5 text-gray-100">
+					<h3 class="text-sm font-semibold">Built for customers and technicians</h3>
+					<p class="mt-2 text-sm text-gray-300 leading-relaxed">
+						MLS helps customers book trusted home services fast while giving technicians a reliable platform to grow their business.
+					</p>
+				</div>
+			</aside>
+		</div>
+	</div>
+</section>
+{% endblock %}

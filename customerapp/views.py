@@ -19,6 +19,7 @@ from .models import Feedback
 def customer_dashboard(request):
     """Main customer dashboard with tabs: services, my-requests, my-projects."""
     tab = request.GET.get("tab", "services")
+    page_number = request.GET.get("page", 1)
 
     # Stats
     my_requests = JobRequest.objects.filter(customer=request.user).select_related(
@@ -75,6 +76,9 @@ def customer_dashboard(request):
 
     elif tab == "my-projects":
         context["projects"] = my_projects.order_by("-job_request__created_at")
+    
+    elif tab == "invoices":
+        return redirect(reverse("billing:customer-invoices") + "?page=" + str(page_number))
 
     return render(request, "customerapp/customer.html", context)
 
@@ -240,7 +244,7 @@ def customer_project_detail(request, project_id):
     from .models import Feedback
 
     project = get_object_or_404(
-        Project.objects.select_related("job_request__service__category", "technician"),
+        Project.objects.select_related("job_request__service__category", "technician", "job_request__customer"),
         pk=project_id,
         job_request__customer=request.user,
     )
@@ -276,6 +280,7 @@ def customer_project_detail(request, project_id):
         "job_request": project.job_request,
         "technician": project.technician,
         "technician_profile": technician_profile,
+        "project_otp": project.job_request.customer.customer_profile.project_otp,  # type: ignore
         "admin_email": admin_email,
         "admins": admins,
         "project_items": project_items,
@@ -331,3 +336,16 @@ def customer_feedback(request, project_id):
 
     context = {"project": project}
     return render(request, "customerapp/feedback_form.html", context)
+
+@login_required()
+@role_required([User.Role.CUSTOMER])
+def customer_make_payment(request, project_id):
+    """Initiate payment for a completed project."""
+    project = get_object_or_404(
+        Project.objects.select_related("invoice"),
+        pk=project_id,
+        job_request__customer=request.user,
+        status=Project.Status.PAYMENT_PENDING,
+    )
+
+    return redirect(reverse("billing:customer-invoice-detail", args=[project.invoice.pk]))  # type: ignore

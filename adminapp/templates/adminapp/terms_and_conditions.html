@@ -1,0 +1,81 @@
+{% extends "index.html" %}
+
+{% block title %}Terms and Conditions - Admin{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+<script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<section class="min-h-screen bg-linear-to-br from-slate-50 via-white to-emerald-50 py-10 px-4 sm:px-6 lg:px-8">
+    <!-- Back link -->
+    <div class="mb-6">
+        <a href="{% url 'adminapp:admin-dashboard' %}?tab=requests"
+            class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/>
+            </svg>
+            Back to Dashboard
+        </a>
+    </div>
+	<div class="max-w-5xl mx-auto">
+		<div class="bg-white/90 backdrop-blur rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+			<div class="px-6 sm:px-8 py-6 border-b border-slate-200 bg-slate-900 text-white">
+				<h1 class="text-2xl sm:text-3xl font-bold tracking-tight">Terms and Conditions</h1>
+				<p class="mt-2 text-sm sm:text-base text-slate-200">
+					Edit the website terms below and submit to save changes.
+				</p>
+			</div>
+
+			<form method="post" action="{% url 'adminapp:admin-create-or-update-terms-and-conditions' %}" class="p-6 sm:p-8 space-y-5">
+				{% csrf_token %}
+
+				<div>
+					<label for="id_content" class="block text-sm font-semibold text-slate-700 mb-2">
+						Terms Content
+					</label>
+					<textarea
+						id="terms-editor"
+						name="terms"
+						rows="30"
+						class="w-full rounded-xl border border-slate-300 p-4 text-sm sm:text-base text-slate-800 leading-7 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+						placeholder="Write your terms and conditions here..."
+						required
+					>{{ terms }}</textarea>
+				</div>
+
+				<div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+					<p class="text-xs sm:text-sm text-slate-500">
+						Changes are applied globally after submission.
+					</p>
+					<button
+						type="submit"
+						class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-600 transition"
+					>
+						Save Terms and Conditions
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    var simplemde = new EasyMDE({
+        element: document.getElementById('terms-editor'),
+        spellChecker: false,
+        forceSync: true,
+        autosave: {
+            enabled: true,
+            delay: 10000,
+            uniqueId: "terms_editor"
+        },
+        renderingConfig: {
+            singleLineBreaks: false,
+             codeSyntaxHighlighting: true
+        },
+    });
+</script>
+{% endblock %}

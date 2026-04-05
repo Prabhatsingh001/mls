@@ -3,19 +3,31 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path("dashboard/", views.admin_dashboard, name="admin-dashboard"),
+    path(
+        "dashboard/", 
+        views.admin_dashboard, 
+        name="admin-dashboard"
+    ),
     path(
         "toggle-active/<int:user_id>/",
         views.admin_toggle_user_active,
         name="admin-toggle-active",
     ),
-    path("make-admin/<int:user_id>/", views.admin_make_admin, name="admin-make-admin"),
+    path(
+        "make-admin/<int:user_id>/",
+        views.admin_make_admin,
+        name="admin-make-admin"
+    ),
     path(
         "remove-admin/<int:user_id>/",
         views.admin_remove_admin,
         name="admin-remove-admin",
     ),
-    path("create-category/", views.admin_create_category, name="admin-create-category"),
+    path(
+        "create-category/",
+        views.admin_create_category,
+        name="admin-create-category"
+    ),
     path(
         "edit-category/<int:category_id>/",
         views.admin_edit_category,
@@ -26,7 +38,11 @@ urlpatterns = [
         views.admin_delete_category,
         name="admin-delete-category",
     ),
-    path("create-service/", views.admin_create_service, name="admin-create-service"),
+    path(
+        "create-service/", 
+        views.admin_create_service, 
+        name="admin-create-service"
+    ),
     path(
         "delete-service/<int:service_id>/",
         views.admin_delete_service,
@@ -72,7 +88,11 @@ urlpatterns = [
         views.admin_remove_service_item_mapping,
         name="admin-remove-service-item-mapping",
     ),
-    path("user/<int:user_id>/", views.get_user_details, name="admin-user-details"),
+    path(
+        "user/<int:user_id>/", 
+        views.get_user_details, 
+        name="admin-user-details"
+    ),
     path(
         "update-tech-status/<int:user_id>/",
         views.admin_update_tech_status,
@@ -108,4 +128,9 @@ urlpatterns = [
         views.admin_update_project_start_date,
         name="admin-update-project-start-date",
     ),
+    path(
+       "terms-and-conditions/", 
+       views.admin_create_or_update_terms_and_conditions, 
+       name="admin-create-or-update-terms-and-conditions"  
+    )
 ]

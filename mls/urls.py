@@ -28,20 +28,42 @@ handler500 = "authentication.views.error_500"
 
 urlpatterns = [
     path("", index, name="index"),
-    path("admin/", admin.site.urls),
-    path("a/", include(("authentication.urls", "authentication"), namespace="a")),
-    path("panel/", include(("adminapp.urls", "adminapp"), namespace="adminapp")),
+    path(
+        "admin/", 
+        admin.site.urls
+    ),
+    path(
+        "a/", 
+        include(("authentication.urls", "authentication"), namespace="a")
+    ),
+    path(
+        "panel/", 
+        include(("adminapp.urls", "adminapp"), namespace="adminapp")
+    ),
     path(
         "customer/",
         include(("customerapp.urls", "customerapp"), namespace="customerapp"),
     ),
-    path("services/", include(("services.urls", "services"), namespace="services")),
+    path(
+        "services/", 
+        include(("services.urls", "services"), namespace="services")
+    ),
     path(
         "notifications/",
         include(("notification.urls", "notification"), namespace="notification"),
     ),
-    path("audit/", include(("auditapp.urls", "auditapp"), namespace="auditapp")),
-    path("auth/", include("social_django.urls", namespace="social")),
+    path(
+        "audit/", 
+        include(("auditapp.urls", "auditapp"), namespace="auditapp")
+    ),
+    path(
+        "billing/", 
+        include(("billing.urls", "billing"), namespace="billing")
+    ),
+    path(
+        "auth/", 
+        include("social_django.urls", namespace="social")
+    ),
 ]
 
 if settings.DEBUG:

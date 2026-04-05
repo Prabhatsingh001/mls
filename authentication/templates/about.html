@@ -1,0 +1,109 @@
+{% extends "index.html" %}
+
+{% block title %}About MLS{% endblock %}
+
+{% block content %}
+<section class="relative overflow-hidden bg-white">
+	<div class="absolute inset-x-0 top-0 h-52 bg-linear-to-b from-gray-100 to-white pointer-events-none"></div>
+
+	<div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
+		<div class="max-w-3xl">
+			<span class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
+				<span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+				Built for customers, technicians, and trusted service delivery
+			</span>
+			<h1 class="mt-4 text-3xl sm:text-4xl font-bold tracking-tight text-gray-900">About MLS</h1>
+			<p class="mt-4 text-sm sm:text-base text-gray-600 leading-relaxed max-w-2xl">
+				MLS is a service ecosystem that helps customers get reliable home and technical services quickly,
+				while enabling skilled technicians to grow with consistent, high-quality work opportunities.
+			</p>
+		</div>
+
+		<div class="mt-10 grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8 items-start">
+			<div class="lg:col-span-3 rounded-2xl border border-gray-200 bg-white shadow-sm p-5 sm:p-7 space-y-8">
+				<div>
+					<h2 class="text-lg font-semibold text-gray-900">What We Do</h2>
+					<p class="mt-2 text-sm text-gray-600 leading-relaxed">
+						We connect customers with verified technicians for a wide range of services, including
+						repairs, installations, maintenance, and on-site technical support. We simplify discovery,
+						booking, communication, and service completion in one dependable platform.
+					</p>
+				</div>
+
+				<div>
+					<h2 class="text-lg font-semibold text-gray-900">What We Are</h2>
+					<p class="mt-2 text-sm text-gray-600 leading-relaxed">
+						We are a technology-driven service platform focused on trust, accountability, and quality.
+						Our system is designed to support three key groups equally: customers who need reliable help,
+						technicians who need steady opportunities, and operations teams who ensure standards remain high.
+					</p>
+				</div>
+
+				<div>
+					<h2 class="text-lg font-semibold text-gray-900">How We Do It</h2>
+					<div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+						<div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+							<p class="text-xs font-semibold uppercase tracking-wide text-gray-700">Step 1</p>
+							<p class="mt-1 text-sm font-medium text-gray-900">Verify &amp; Onboard</p>
+							<p class="mt-1 text-xs text-gray-600 leading-relaxed">We onboard technicians with role checks and profile standards before they serve customers.</p>
+						</div>
+						<div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+							<p class="text-xs font-semibold uppercase tracking-wide text-gray-700">Step 2</p>
+							<p class="mt-1 text-sm font-medium text-gray-900">Match &amp; Manage</p>
+							<p class="mt-1 text-xs text-gray-600 leading-relaxed">Customers are matched with the right professionals through a streamlined service workflow.</p>
+						</div>
+						<div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+							<p class="text-xs font-semibold uppercase tracking-wide text-gray-700">Step 3</p>
+							<p class="mt-1 text-sm font-medium text-gray-900">Monitor &amp; Improve</p>
+							<p class="mt-1 text-xs text-gray-600 leading-relaxed">We use audits, notifications, and feedback loops to continuously improve service outcomes.</p>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<aside class="lg:col-span-2 space-y-4">
+				<div class="rounded-2xl border border-gray-200 bg-gray-50 p-5">
+					<h3 class="text-sm font-semibold text-gray-900">What We Try To Achieve</h3>
+					<ul class="mt-4 space-y-3 text-sm text-gray-600">
+						<li class="flex items-start gap-2">
+							<span class="mt-1 h-2 w-2 rounded-full bg-emerald-500"></span>
+							Make quality service access fast, transparent, and dependable for every customer.
+						</li>
+						<li class="flex items-start gap-2">
+							<span class="mt-1 h-2 w-2 rounded-full bg-emerald-500"></span>
+							Build fair growth opportunities for technicians through structured, repeatable demand.
+						</li>
+						<li class="flex items-start gap-2">
+							<span class="mt-1 h-2 w-2 rounded-full bg-emerald-500"></span>
+							Maintain trust through strong operations, clear communication, and accountable delivery.
+						</li>
+					</ul>
+				</div>
+
+				<div class="rounded-2xl border border-gray-200 bg-white p-5">
+					<h3 class="text-sm font-semibold text-gray-900">What We Excel At</h3>
+					<div class="mt-4 space-y-3 text-sm text-gray-600">
+						<p><span class="font-medium text-gray-800">Operational reliability:</span> Consistent service flow from booking to completion.</p>
+						<p><span class="font-medium text-gray-800">Role-aware experience:</span> Tailored journeys for customers, technicians, and admins.</p>
+						<p><span class="font-medium text-gray-800">Trust &amp; compliance:</span> Verified profiles, audit logs, and accountable service records.</p>
+					</div>
+				</div>
+
+				<div class="rounded-2xl border border-gray-200 bg-gray-900 p-5 text-gray-100">
+					<h3 class="text-sm font-semibold">Our Focus</h3>
+					<p class="mt-2 text-sm text-gray-300 leading-relaxed">
+						We are building a long-term service network where professionalism, trust, and continuous
+						improvement create measurable value for every stakeholder in the MLS ecosystem.
+					</p>
+					<a
+						href="{% url 'a:contact' %}"
+						class="mt-4 inline-flex items-center justify-center rounded-lg bg-white px-4 py-2 text-xs font-semibold text-gray-900 hover:bg-gray-100 transition"
+					>
+						Talk to Our Team
+					</a>
+				</div>
+			</aside>
+		</div>
+	</div>
+</section>
+{% endblock %}

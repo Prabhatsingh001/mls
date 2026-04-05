@@ -11,6 +11,7 @@
             {% elif tab == 'users' %}All Users
             {% elif tab == 'feedbacks' %}Feedbacks
             {% elif tab == 'audit-trails' %}Audit Trails
+            {% elif tab == 'invoices' %}Invoices
             {% else %}Dashboard
             {% endif %}
         </span>
@@ -64,10 +65,18 @@
                 Feedbacks
 
             </a>
+            <a href="?tab=invoices" class="rounded px-3 py-2 text-sm font-medium transition
+                {% if tab == 'invoices' %}bg-gray-100 text-gray-800{% else %}text-gray-500 hover:bg-gray-50 hover:text-gray-700{% endif %}">
+                Invoices
+            </a>
             <a href="?tab=audit-trails"
                 class="rounded px-3 py-2 text-sm font-medium transition
                 {% if tab == 'audit-trails' %}bg-gray-100 text-gray-800{% else %}text-gray-500 hover:bg-gray-50 hover:text-gray-700{% endif %}">
                 Audit Trails
+            </a>
+            <a href="{% url 'adminapp:admin-create-or-update-terms-and-conditions' %}"
+                class="rounded px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 transition">
+                Terms &amp; Conditions
             </a>
         </div>
     </div>
@@ -117,11 +126,21 @@
             {% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}">
             Feedbacks
         </a>
+        <a href="?tab=invoices"
+            class="pb-3 text-sm font-medium border-b-2 transition
+            {% if tab == 'invoices' %}border-gray-800 text-gray-800
+            {% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}">
+            Invoices
+        </a>
         <a href="?tab=audit-trails"
             class="pb-3 text-sm font-medium border-b-2 transition
             {% if tab == 'audit-trails' %}border-gray-800 text-gray-800
             {% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}">
             Audit Trails
+        </a>
+        <a href="{% url 'adminapp:admin-create-or-update-terms-and-conditions' %}"
+            class="pb-3 border-transaprent text-sm text-emerald-500 hover:border-bottom-2 hover:border-gray-300 transition">
+            Terms &amp; Conditions
         </a>
     </nav>
 </div>

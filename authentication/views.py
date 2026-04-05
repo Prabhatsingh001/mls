@@ -1,5 +1,8 @@
 import logging
+import random
+import string
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import (
     authenticate,
@@ -19,7 +22,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from django_ratelimit.decorators import ratelimit
-from django.conf import settings
+
 # from .validators import (
 #     validate_role,
 #     validate_password,
@@ -30,17 +33,24 @@ from django.conf import settings
 #     register_phone_user,
 #     register_email_user,
 # )
-
 from auditapp.models import AuditLog
-from auditapp.utils import _log_details
 from auditapp.tasks import record_audit_log_tasks
+from auditapp.utils import _log_details
 
-from .models import Address, CustomerProfile, PhoneOTP, TechnicianProfile, User
+from .models import (
+    Address, 
+    CustomerProfile, 
+    PhoneOTP, 
+    TechnicianProfile, 
+    User, 
+    ContactMessage,
+)
 from .tasks import (
     password_reset_success_email,
+    send_phone_verification_sms,
     send_reset_password_email,
     send_verification_mail,
-    send_phone_verification_sms,
+    send_contact_message_email,
 )
 from .tokens import account_activation_token, password_reset_token
 
@@ -70,6 +80,58 @@ def redirect_dashboard(request):
 
 def account_blocked(request):
     return render(request, "account_blocked.html")
+
+
+def contact(request):
+    form_name = ""
+    form_email = ""
+    form_message = ""
+    form_phone_number = ""
+
+    if request.user.is_authenticated:
+        form_name = request.user.full_name or ""
+        form_email = request.user.email or ""
+        form_phone_number = request.user.phone_number or ""
+
+    if request.method == "POST":
+        form_name = request.POST.get("name", "").strip()
+        form_email = request.POST.get("email", "").strip()
+        form_message = request.POST.get("message", "").strip()
+        form_phone_number = request.POST.get("phone_number", "").strip()
+
+        if not (form_name and form_email and form_message):
+            messages.error(request, "Please fill in your name, email, and message.")
+            return redirect("a:contact")
+        
+        contact = ContactMessage.objects.create(
+            name=form_name,
+            email=form_email,
+            phone_number=form_phone_number,
+            msg=form_message,
+        )
+
+        transaction.on_commit(
+            lambda: send_contact_message_email.delay(contact_message_id=contact.pk)  # type: ignore
+        )
+        messages.success(
+            request,
+            "Thanks for reaching out. Our support team will contact you soon.",
+        )
+        return redirect("a:contact")
+
+    return render(
+        request,
+        "contact.html",
+        {
+            "form_name": form_name,
+            "form_email": form_email,
+            "form_message": form_message,
+            "form_phone_number": form_phone_number,
+        },
+    )
+
+def about(request):
+    return render(request, "about.html")
 
 
 # def register(request):
@@ -330,8 +392,20 @@ def choose_role(request):
         role = request.POST.get("role")
 
         if role in User.Role.values:
-            request.user.role = role
-            request.user.save()
+            user = request.user
+            user.role = role
+            user.save()
+
+            if role == User.Role.CUSTOMER:
+                CustomerProfile.objects.get_or_create(
+                    user=user, 
+                    defaults={
+                        "project_otp": ''.join(random.choices(string.digits, k=6))
+                    },
+                )
+            elif role == User.Role.TECHNICIAN:
+                TechnicianProfile.objects.get_or_create(user=user)
+
             log_details = _log_details(
                 request,
                 category=AuditLog.Category.USER,
@@ -594,7 +668,10 @@ def edit_profile(request, user_id):
     if user.role == User.Role.TECHNICIAN:
         tech_profile, _ = TechnicianProfile.objects.get_or_create(user=user)
     elif user.role == User.Role.CUSTOMER:
-        cust_profile, _ = CustomerProfile.objects.get_or_create(user=user)
+        cust_profile, _ = CustomerProfile.objects.get_or_create(
+            user=user,
+            defaults={"project_otp": ''.join(random.choices(string.digits, k=6))}
+        )
         addresses = cust_profile.addresses.all()  # type: ignore
 
     if request.method == "POST":
@@ -709,12 +786,17 @@ def delete_account(request, user_id):
     if request.user.pk != user.pk:
         messages.error(request, "You can only delete your own account.")
         return redirect("a:profile", user_id=user.pk)
-
-    if request.method == "POST":
-        auth_logout(request)
-        user.delete()
-        messages.success(request, "Your account has been deleted.")
-        return redirect("a:login")
+    
+    try:
+        if request.method == "POST":
+            auth_logout(request)
+            user.delete()
+            messages.success(request, "Your account has been deleted.")
+            return redirect("a:login")
+    except Exception as e:
+        logger.error(f"Error deleting account for user {user.email}: {e}")
+        messages.error(request, "An error occurred while deleting your account. Please try again later.")
+        return redirect("a:profile", user_id=user.pk)
 
     return render(request, "confirm_delete_account.html", {"user": user})
 

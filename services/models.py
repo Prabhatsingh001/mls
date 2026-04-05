@@ -117,6 +117,7 @@ class Project(models.Model):
         PENDING = "PENDING", "Pending/Quoted"
         SCHEDULED = "SCHED", "Scheduled"
         ONGOING = "ONGOING", "In Progress"
+        PAYMENT_PENDING = "PAYMENT_PENDING", "Payment Pending"
         COMPLETED = "COMPLETED", "Completed"
         CANCELLED = "CANCELLED", "Cancelled"
 
