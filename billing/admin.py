@@ -169,7 +169,7 @@ class PaymentAdmin(admin.ModelAdmin):
             "Razorpay Details",
             {
                 "fields": (
-                    "razorpay_order_id",
+                    "razorpay_order",
                     "razorpay_payment_id",
                     "razorpay_signature",
                 ),

@@ -34,7 +34,7 @@ def create_profile(sender, instance, **kwargs):
             instance, "customer_profile"
         ):
             otp_code = ''.join(random.choices(string.digits, k=6))
-            CustomerProfile.objects.create(user=instance, otp_code=otp_code)
+            CustomerProfile.objects.create(user=instance, project_otp=otp_code)
 
         elif instance.role == User.Role.TECHNICIAN and not hasattr(
             instance, "technician_profile"

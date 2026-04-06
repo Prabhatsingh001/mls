@@ -166,9 +166,7 @@ def payment_callback(request):
             return JsonResponse({"error": "Invalid payment signature"}, status=400)
 
         # Find the order
-        razorpay_order = RazorpayOrder.objects.get(
-            order_id=razorpay_order_id
-        )
+        razorpay_order = get_object_or_404(RazorpayOrder, order_id=razorpay_order_id)
 
         # Ensure customer owns this invoice
         if razorpay_order.invoice.customer != request.user:
@@ -177,7 +175,7 @@ def payment_callback(request):
         return JsonResponse(
             {
                 "success": True,
-                "message": "Payment recieved, confirming...",
+                "message": "Payment received, confirming...",
                 "redirect_url": f"/billing/invoice/{razorpay_order.invoice.pk}/",
             }
         )
@@ -253,10 +251,6 @@ def razorpay_webhook(request):
                     )
 
                     if created:
-                        payment.invoice.status = Invoice.Status.PAID
-                        payment.invoice.amount_paid = amount
-                        payment.invoice.amount_due = payment.invoice.amount_due - amount
-                        payment.invoice.save(update_fields=["status", "amount_paid", "amount_due"])
                         transaction.on_commit(
                             lambda: generate_payment_confirmation_pdf_task.delay(
                                 payment.invoice.pk

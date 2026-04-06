@@ -1,16 +1,18 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ObjectDoesNotExist
+from django.db import transaction
 from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.db import transaction
 
 from auditapp.models import AuditLog
-from auditapp.utils import _log_details
 from auditapp.tasks import record_audit_log_tasks
+from auditapp.utils import _log_details
 from authentication.decorators import role_required
 from authentication.models import User
 from services.models import Category, JobRequest, Project, Service, ServiceItemMapping
+
 from .models import Feedback
 
 
@@ -76,9 +78,11 @@ def customer_dashboard(request):
 
     elif tab == "my-projects":
         context["projects"] = my_projects.order_by("-job_request__created_at")
-    
+
     elif tab == "invoices":
-        return redirect(reverse("billing:customer-invoices") + "?page=" + str(page_number))
+        return redirect(
+            reverse("billing:customer-invoices") + "?page=" + str(page_number)
+        )
 
     return render(request, "customerapp/customer.html", context)
 
@@ -244,7 +248,9 @@ def customer_project_detail(request, project_id):
     from .models import Feedback
 
     project = get_object_or_404(
-        Project.objects.select_related("job_request__service__category", "technician", "job_request__customer"),
+        Project.objects.select_related(
+            "job_request__service__category", "technician", "job_request__customer"
+        ),
         pk=project_id,
         job_request__customer=request.user,
     )
@@ -337,15 +343,25 @@ def customer_feedback(request, project_id):
     context = {"project": project}
     return render(request, "customerapp/feedback_form.html", context)
 
+
 @login_required()
 @role_required([User.Role.CUSTOMER])
 def customer_make_payment(request, project_id):
     """Initiate payment for a completed project."""
-    project = get_object_or_404(
-        Project.objects.select_related("invoice"),
-        pk=project_id,
-        job_request__customer=request.user,
-        status=Project.Status.PAYMENT_PENDING,
-    )
+    try:
+        project = get_object_or_404(
+            Project.objects.select_related("invoice"),
+            pk=project_id,
+            job_request__customer=request.user,
+            status=Project.Status.PAYMENT_PENDING,
+        )
 
-    return redirect(reverse("billing:customer-invoice-detail", args=[project.invoice.pk]))  # type: ignore
+        return redirect(
+            reverse("billing:customer-invoice-detail", args=[project.invoice.pk]) # type: ignore
+        )  # type: ignore
+    except ObjectDoesNotExist:
+        messages.error(request, "invoice is being generated....try again in a moment")
+        return redirect("customerapp:customer-project-detail", project_id=project_id)
+    except Exception:
+        messages.error(request, "An error occurred while initiating payment. Please try again.")
+        return redirect("customerapp:customer-project-detail", project_id=project_id)

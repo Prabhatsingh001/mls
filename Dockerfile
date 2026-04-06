@@ -32,11 +32,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PIP_NO_CACHE_DIR=1 \
     VENV_PATH=/opt/venv \
-    PATH="/opt/venv/bin:${PATH}"
+    PATH="/opt/venv/bin:${PATH}" \
+    XDG_CACHE_HOME=/home/app/.cache
 
 WORKDIR /app
 
-# 🔥 Add WeasyPrint system dependencies here
+# WeasyPrint dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     libcairo2 \
@@ -49,12 +50,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Create app user
-RUN groupadd --system app && useradd --system --gid app --home-dir /app app
+RUN groupadd --system app && useradd --system --gid app --home-dir /home/app --create-home app
+
+# 🔥 Create cache directory with correct permissions
+RUN mkdir -p /home/app/.cache/fontconfig && \
+    chown -R app:app /home/app/.cache
 
 COPY --from=builder /opt/venv /opt/venv
 COPY --chown=app:app . /app
 
-# Create media directory
+# Media directory
 RUN mkdir -p /app/media/service_items && \
     chown -R app:app /app/media
 

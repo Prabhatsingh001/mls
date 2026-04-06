@@ -14,8 +14,13 @@ def validate_image(file):
     try:
         img = Image.open(file)
         img.verify()
+        if hasattr(file, "seek"):
+            try:
+                file.seek(0)
+            except (AttributeError, OSError):
+                pass
     except Exception:
-        raise ValueError("Invalid image file")
+        raise ValidationError(_("Invalid image file."))
 
 # def validate_role(role, allowed_roles):
 #     if role not in allowed_roles:

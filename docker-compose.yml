@@ -36,7 +36,7 @@ services:
     container_name: mls_celery_worker_email
     restart: unless-stopped
     user: app
-    command: celery -A mls worker -Q email_queue -n email_worker@%h --loglevel=info --pool=solo
+    command: celery -A mls worker -Q email_queue -n email_worker@%h --loglevel=warning --pool=solo
     env_file:
       - .env
     environment:
@@ -65,7 +65,7 @@ services:
     container_name: mls_celery_worker_audit
     restart: unless-stopped
     user: app
-    command: celery -A mls worker -Q audit_queue -n audit_worker@%h --loglevel=info --pool=solo
+    command: celery -A mls worker -Q audit_queue -n audit_worker@%h --loglevel=warning --pool=solo
     env_file:
       - .env
     environment:
@@ -94,7 +94,7 @@ services:
     container_name: mls_celery_worker_notification
     restart: unless-stopped
     user: app
-    command: celery -A mls worker -Q notification_queue -n notification_worker@%h --loglevel=info --pool=solo
+    command: celery -A mls worker -Q notification_queue -n notification_worker@%h --loglevel=warning --pool=solo
     env_file:
       - .env
     environment:
@@ -123,7 +123,7 @@ services:
     container_name: mls_celery_beat
     restart: unless-stopped
     user: app
-    command: celery -A mls beat --loglevel=info
+    command: celery -A mls beat --loglevel=warning
     env_file:
       - .env
     environment:

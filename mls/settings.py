@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 
-from decouple import config
+from decouple import Csv, config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -120,16 +120,11 @@ NPM_BIN_PATH = "C:\\Program Files\\nodejs\\npm.cmd"
 if DEBUG:
     SITE_DOMAIN = "127.0.0.1:8000"
     PROTOCOL = "http"
-    ALLOWED_HOSTS = [
-        "127.0.0.1",
-        "localhost",
-        "eveline-correlatable-lonna.ngrok-free.dev",
-    ]
+    ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv(), default='127.0.0.1, localhost')
 else:
     SITE_DOMAIN = "url-ly.onrender.com"
     PROTOCOL = "https"
-    ALLOWED_HOSTS = config("ALLOWED_HOSTS")
-
+    ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv(), default='url-ly.onrender.com')
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -147,11 +142,11 @@ else:
     DATABASES = {
         "default": {
             "ENGINE": DATABASE_ENGINE,
-            "NAME": config("DATABASE_NAME", default="mls_db"),
-            "USER": config("DATABASE_USER", default="mls_user"),
-            "PASSWORD": config("DATABASE_PASSWORD", default="mls_pg_secret_2026"),
-            "HOST": config("DATABASE_HOST", default="localhost"),
-            "PORT": config("DATABASE_PORT", default="5432"),
+            "NAME": config("DATABASE_NAME"),
+            "USER": config("DATABASE_USER"),
+            "PASSWORD": config("DATABASE_PASSWORD"),
+            "HOST": config("DATABASE_HOST"),
+            "PORT": config("DATABASE_PORT", cast=int),
         }
     }
 
@@ -259,3 +254,16 @@ SOCIAL_AUTH_PIPELINE = (
     "social_core.pipeline.social_auth.associate_user",
     "social_core.pipeline.social_auth.load_extra_data",
 )
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "loggers": {
+        "fontTools": {
+            "level": "ERROR",
+        },
+        "weasyprint": {
+            "level": "ERROR",
+        },
+    },
+}

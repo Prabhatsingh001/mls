@@ -293,7 +293,7 @@ def update_project_status(request, project_id):
     elif new_status == Project.Status.PAYMENT_PENDING:
         project.save(update_fields=["status"])
         return redirect("services:project-completion", project_id=project.pk)
-    project.save()
+    
     log_details = _log_details(
         request,
         category=AuditLog.Category.PROJECT,
@@ -314,7 +314,10 @@ def project_completion(request, project_id):
     if request.method == "POST":
         project = get_object_or_404(Project, pk=project_id, technician=request.user)
         customer_profile = get_object_or_404(CustomerProfile, user=project.job_request.customer)
-        invoice = Invoice.objects.filter(project_id=project.pk).first()
+        invoice = Invoice.objects.filter(project=project).first()
+        if not invoice:
+            messages.error(request, "No invoice found for this project. Cannot mark as completed...try again after a few moments...")
+            return redirect("services:project-completion", project_id=project.pk)
         otp = request.POST.get("otp", "").strip()
         
         if otp == customer_profile.project_otp and  invoice.status == Invoice.Status.PAID: # type: ignore
