@@ -1,6 +1,10 @@
 from django.conf import settings
 from django.db import models
 
+from authentication.validators import validate_image, validate_image_size
+from django.core.validators import FileExtensionValidator
+from .utils import service_item_image_path, work_proof_image_path
+
 
 class Category(models.Model):
     """E.g., Plumbing, Electrical, HVAC, New Construction"""
@@ -46,7 +50,12 @@ class ServiceItem(models.Model):
 
     name = models.CharField(max_length=200)
     item_type = models.CharField(max_length=20, choices=ItemType.choices)
-    image = models.ImageField(upload_to="service_items/", null=True, blank=True)
+    image = models.ImageField(upload_to=service_item_image_path, null=True, blank=True, 
+        validators=[
+            FileExtensionValidator(allowed_extensions=["jpg", "jpeg", "png", "webp"]),
+            validate_image_size,
+            validate_image,]
+    )
     description = models.TextField(blank=True)
     unit_cost = models.DecimalField(max_digits=10, decimal_places=2)
     is_available = models.BooleanField(default=True)
@@ -236,3 +245,28 @@ class ProjectItem(models.Model):
 
     def __str__(self):
         return f"{self.item_name} for PRJ-{self.project.pk}"
+
+
+class WorkProof(models.Model):
+    project = models.ForeignKey(
+        Project, on_delete=models.CASCADE, related_name="work_proofs"
+    )
+    image = models.ImageField(upload_to=work_proof_image_path, validators=[
+        FileExtensionValidator(allowed_extensions=["jpg", "jpeg", "png", "webp"]),
+        validate_image_size,
+        validate_image,
+    ])
+    uploaded_by = models.ForeignKey(
+        "authentication.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="uploaded_work_proofs",
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-uploaded_at"]
+
+    def __str__(self):
+        return f"Work Proof for PRJ-{self.project.pk} uploaded at {self.uploaded_at}"

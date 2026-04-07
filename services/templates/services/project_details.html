@@ -319,39 +319,86 @@
     <div class="rounded-lg border border-gray-200 bg-white p-6">
         <h2 class="text-sm font-semibold text-gray-800 mb-4">Update Project Status</h2>
         <div class="flex flex-wrap gap-3">
-        {% if project.status != 'ONGOING'%}
-        <form method="post" action="{% url 'services:update-project-status' project.pk %}">
-            {% csrf_token %}
-            <input type="hidden" name="status" value="ONGOING">
-            <button type="submit"
-                    class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 transition shadow-sm">
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"/>
-            </svg>
-            Mark as In Progress
-            </button>
-        </form>
+        {% if project.status != 'ONGOING' and project.status != 'PAYMENT_PENDING' %}
+            <form method="post" action="{% url 'services:update-project-status' project.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="status" value="ONGOING">
+                <button type="submit"
+                        class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 transition shadow-sm">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"/>
+                </svg>
+                Mark as In Progress
+                </button>
+            </form>
         {% endif %}
 
         {% if project.status != 'PAYMENT_PENDING' %}
-            <form method="post" action="{% url 'services:update-project-status' project.pk %}"
-                    onsubmit="return confirm('Are you sure you want to mark this project as payment pending?')">
-                {% csrf_token %}
-                <input type="hidden" name="status" value="PAYMENT_PENDING">
-                <button type="submit"
-                        class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-700 transition shadow-sm">
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/>
-                </svg>
-                    Mark Awaiting Payment
-                </button>
-            </form>
+        <button type="button"
+                onclick="openWorkProofModal()"
+                class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-700 transition shadow-sm">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/>
+            </svg>
+            Mark Awaiting Payment
+        </button>
         {% endif %}
         </div>
     </div>
     {% endif %}
 
 </div>
+
+{% if project.status != 'PAYMENT_PENDING' and project.status != 'COMPLETED' and project.status != 'CANCELLED' %}
+<div id="workProofModal" class="fixed inset-0 z-50 hidden" aria-hidden="true">
+    <div class="absolute inset-0 bg-black/50" onclick="closeWorkProofModal()"></div>
+    <div class="relative mx-auto mt-10 w-[calc(100%-2rem)] max-w-xl rounded-xl bg-white shadow-xl">
+        <div class="border-b border-gray-200 px-6 py-4">
+            <h3 class="text-base font-semibold text-gray-900">Upload Site Completion Images</h3>
+            <p class="mt-1 text-sm text-gray-500">Add clear photos of completed work to move this project to Awaiting Payment.</p>
+        </div>
+        <form method="post" action="{% url 'services:update-project-status' project.pk %}" enctype="multipart/form-data" class="px-6 py-5">
+            {% csrf_token %}
+            <input type="hidden" name="status" value="PAYMENT_PENDING">
+
+            <label for="work_images" class="mb-2 block text-sm font-medium text-gray-700">Completed site images <span class="text-red-600">*</span></label>
+            <input id="work_images"
+                   name="work_images"
+                   type="file"
+                   accept="image/*"
+                   multiple
+                   required
+                   class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 file:mr-3 file:rounded-md file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-gray-700 hover:file:bg-gray-200">
+            <p class="mt-2 text-xs text-gray-500">You can select multiple images. Accepted formats: JPG, JPEG, PNG, WEBP.</p>
+
+            <div class="mt-5 flex flex-wrap justify-end gap-2">
+                <button type="button" onclick="closeWorkProofModal()" class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">Cancel</button>
+                <button type="submit" class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition">Upload and Continue</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openWorkProofModal() {
+    const modal = document.getElementById('workProofModal');
+    if (!modal) {
+        return;
+    }
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+}
+
+function closeWorkProofModal() {
+    const modal = document.getElementById('workProofModal');
+    if (!modal) {
+        return;
+    }
+    modal.classList.add('hidden');
+    modal.setAttribute('aria-hidden', 'true');
+}
+</script>
+{% endif %}
 
 {% include "services/components/update_extra_material_modal.html" %}
 {% endblock %}

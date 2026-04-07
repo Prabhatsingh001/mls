@@ -9,9 +9,11 @@ def _generate_file_name(instance, filename):
     timestamp = timezone.now().strftime("%Y%m%d%H%M%S")
     return [f"MLS_{timestamp}", ext]
 
+
 def user_profile_image_path(instance, filename):
     image_name, ext = _generate_file_name(instance, filename)
     return f"profile_pictures/{image_name}_profile{ext}"
+
 
 def user_aadhar_image_path(instance, filename):
     image_name, ext = _generate_file_name(instance, filename)

@@ -2,19 +2,25 @@ from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
-from django.db import transaction
 
 from auditapp.models import AuditLog
-from auditapp.utils import _log_details
 from auditapp.tasks import record_audit_log_tasks
+from auditapp.utils import _log_details
 from authentication.decorators import role_required
-from authentication.models import TechnicianProfile, User, CustomerProfile
-
-from .models import Project, ProjectExtraMaterial, ServiceItem, ServiceItemMapping
+from authentication.models import CustomerProfile, TechnicianProfile, User
 from billing.models import Invoice
+
+from .models import (
+    Project,
+    ProjectExtraMaterial,
+    ServiceItem,
+    ServiceItemMapping,
+    WorkProof,
+)
 
 
 @login_required()
@@ -287,13 +293,31 @@ def update_project_status(request, project_id):
         return redirect("services:project-details", project_id=project.pk)
 
     project.status = new_status
-    if new_status == Project.Status.ONGOING and not project.start_date:
-        project.start_date = timezone.now().date()
-        project.save(update_fields=["status", "start_date"])
+    if new_status == Project.Status.ONGOING:
+        if not project.start_date:
+            project.start_date = timezone.now().date()
+            project.save(update_fields=["status", "start_date"])
+        else:
+            project.save(update_fields=["status"])
     elif new_status == Project.Status.PAYMENT_PENDING:
+        files = request.FILES.getlist("work_images")
+        if not files:
+            messages.error(
+                request,
+                "Upload at least one completed work image before moving to Awaiting Payment.",
+            )
+            return redirect("services:project-details", project_id=project.pk)
+
+        for image_file in files:
+            WorkProof.objects.create(
+                project=project,
+                image=image_file,
+                uploaded_by=request.user,
+            )
+
         project.save(update_fields=["status"])
         return redirect("services:project-completion", project_id=project.pk)
-    
+
     log_details = _log_details(
         request,
         category=AuditLog.Category.PROJECT,
@@ -313,14 +337,22 @@ def update_project_status(request, project_id):
 def project_completion(request, project_id):
     if request.method == "POST":
         project = get_object_or_404(Project, pk=project_id, technician=request.user)
-        customer_profile = get_object_or_404(CustomerProfile, user=project.job_request.customer)
+        customer_profile = get_object_or_404(
+            CustomerProfile, user=project.job_request.customer
+        )
         invoice = Invoice.objects.filter(project=project).first()
         if not invoice:
-            messages.error(request, "No invoice found for this project. Cannot mark as completed...try again after a few moments...")
+            messages.error(
+                request,
+                "No invoice found for this project. Cannot mark as completed...try again after a few moments...",
+            )
             return redirect("services:project-completion", project_id=project.pk)
         otp = request.POST.get("otp", "").strip()
-        
-        if otp == customer_profile.project_otp and  invoice.status == Invoice.Status.PAID: # type: ignore
+
+        if (
+            otp == customer_profile.project_otp
+            and invoice.status == Invoice.Status.PAID
+        ):  # type: ignore
             project.status = Project.Status.COMPLETED
             project.completion_date = timezone.now().date()
             project.job_request.is_project_completed = True
@@ -328,14 +360,19 @@ def project_completion(request, project_id):
             project.job_request.save(update_fields=["is_project_completed"])
             messages.success(request, "Project marked as completed.")
             return redirect("services:project-details", project_id=project.pk)
-        
-        messages.error(request, "Invalid OTP or payment not completed. Cannot mark project as completed.")
+
+        messages.error(
+            request,
+            "Invalid OTP or payment not completed. Cannot mark project as completed.",
+        )
         return redirect("services:project-completion", project_id=project.pk)
     else:
         project = get_object_or_404(Project, pk=project_id, technician=request.user)
         if project.status != Project.Status.PAYMENT_PENDING:
-            messages.error(request, "Only projects with payment pending can be marked as completed.")
+            messages.error(
+                request,
+                "Only projects with payment pending can be marked as completed.",
+            )
             return redirect("services:project-details", project_id=project.pk)
-        
+
         return render(request, "services/project_completion.html", {"project": project})
-    
