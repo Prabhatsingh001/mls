@@ -19,38 +19,28 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from django_ratelimit.decorators import ratelimit
-
-# from .validators import (
-#     validate_role,
-#     validate_password,
-#     validate_email,
-#     validate_phone,
-# )
-# from .service import (
-#     register_phone_user,
-#     register_email_user,
-# )
 from auditapp.models import AuditLog
 from auditapp.tasks import record_audit_log_tasks
 from auditapp.utils import _log_details
 
 from .models import (
-    Address, 
-    CustomerProfile, 
-    PhoneOTP, 
-    TechnicianProfile, 
-    User, 
+    Address,
     ContactMessage,
+    CustomerProfile,
+    PhoneOTP,
+    TechnicianProfile,
+    User,
 )
 from .tasks import (
     password_reset_success_email,
+    send_contact_message_email,
     send_phone_verification_sms,
     send_reset_password_email,
     send_verification_mail,
-    send_contact_message_email,
 )
 from .tokens import account_activation_token, password_reset_token
 
@@ -102,7 +92,7 @@ def contact(request):
         if not (form_name and form_email and form_message):
             messages.error(request, "Please fill in your name, email, and message.")
             return redirect("a:contact")
-        
+
         contact = ContactMessage.objects.create(
             name=form_name,
             email=form_email,
@@ -130,108 +120,9 @@ def contact(request):
         },
     )
 
+
 def about(request):
     return render(request, "about.html")
-
-
-# def register(request):
-#     allowed_roles = dict(User.Role.choices)
-#     # Exclude ADMIN from self-registration
-#     allowed_roles.pop(User.Role.ADMIN, None)
-
-#     if request.method == "POST":
-#         full_name = request.POST["full_name"]
-#         password = request.POST["password"]
-#         confirm_password = request.POST["confirm_password"]
-#         role = request.POST.get("role", User.Role.CUSTOMER)
-#         signup_method = request.POST.get("signup_method", "email")
-
-#         error = validate_role(role, allowed_roles)
-#         if error:
-#             messages.error(request, error)
-#             return render(
-#                 request,
-#                 "register.html",
-#                 {"roles": allowed_roles.items()},
-#             )
-
-#         error = validate_password(password, confirm_password)
-#         if error:
-#             messages.error(request, error)
-#             return render(
-#                 request,
-#                 "register.html",
-#                 {"roles": allowed_roles.items()},
-#             )
-
-#         if signup_method == "phone":
-#             phone = request.POST.get("phone", "").strip()
-#             error = validate_phone(phone)
-#             if error:
-#                 messages.error(request, error)
-#                 return render(
-#                     request,
-#                     "register.html",
-#                     {"roles": allowed_roles.items()},
-#                 )
-
-#             user = register_phone_user(full_name, password, phone, role)
-
-#             log_details = _log_details(
-#                 request,
-#                 category=AuditLog.Category.USER,
-#                 action="signup",
-#                 description=f"New user registered: {user.email} (method: phone)",
-#                 target=user,
-#                 actor=user,
-#                 metadata={"signup_method": "phone", "role": role},
-#             )
-#             transaction.on_commit(lambda: record_audit_log_tasks.delay(log_details))  # type: ignore
-
-#             if settings.DEBUG:
-#                 otp = PhoneOTP.generate_otp(user)
-#                 logger.info(f"[Phone OTP] OTP for {phone}: {otp.otp}")
-#                 print(f"\n{'=' * 50}")
-#                 print(f"  OTP for {phone}: {otp.otp}")
-#                 print(f"{'=' * 50}\n")
-
-#             messages.success(
-#                 request,
-#                 "Registration successful! Please enter the OTP sent to your phone.",
-#             )
-#             return redirect("a:verify-phone-otp", user_id=user.pk)
-
-#         else:
-#             email = request.POST.get("email", "").strip()
-#             error = validate_email(email)
-#             if error:
-#                 messages.error(request, error)
-#                 return render(
-#                     request,
-#                     "register.html",
-#                     {"roles": allowed_roles.items()},
-#                 )
-
-#             user = register_email_user(full_name, password, email, role)
-
-#             log_details = _log_details(
-#                 request,
-#                 category=AuditLog.Category.USER,
-#                 action="signup",
-#                 description=f"New user registered: {user.email} (method: email)",
-#                 target=user,
-#                 actor=user,
-#                 metadata={"signup_method": "email", "role": role},
-#             )
-#             transaction.on_commit(lambda: record_audit_log_tasks.delay(log_details))  # type: ignore
-
-#             messages.success(
-#                 request,
-#                 "Registration successful! Please check your email to verify your email address.",
-#             )
-#             return redirect("a:resend-verification-email", email=email)
-
-#     return render(request, "register.html", {"roles": allowed_roles.items()})
 
 
 def register(request):
@@ -398,9 +289,9 @@ def choose_role(request):
 
             if role == User.Role.CUSTOMER:
                 CustomerProfile.objects.get_or_create(
-                    user=user, 
+                    user=user,
                     defaults={
-                        "project_otp": ''.join(random.choices(string.digits, k=6))
+                        "project_otp": "".join(random.choices(string.digits, k=6))
                     },
                 )
             elif role == User.Role.TECHNICIAN:
@@ -670,13 +561,15 @@ def edit_profile(request, user_id):
     elif user.role == User.Role.CUSTOMER:
         cust_profile, _ = CustomerProfile.objects.get_or_create(
             user=user,
-            defaults={"project_otp": ''.join(random.choices(string.digits, k=6))}
+            defaults={"project_otp": "".join(random.choices(string.digits, k=6))},
         )
         addresses = cust_profile.addresses.all()  # type: ignore
 
     if request.method == "POST":
         full_name = request.POST.get("full_name", "").strip()
         phone_number = request.POST.get("phone_number", "").strip()
+        email_verification_required = False
+        phone_verification_required = False
 
         if full_name:
             user.full_name = full_name
@@ -698,10 +591,19 @@ def edit_profile(request, user_id):
                         },
                     )
                 user.email = new_email
+                user.email_verified = False
+                email_verification_required = True
         else:
-            user.phone_number = phone_number
+            normalized_phone = phone_number.strip()
+            if normalized_phone != user.phone_number:
+                user.phone_number = normalized_phone
+                user.phone_verified = False if normalized_phone else user.phone_verified
+                phone_verification_required = bool(normalized_phone)
 
         user.save()
+
+        if email_verification_required:
+            transaction.on_commit(lambda: send_verification_mail.delay(user.id))  # type: ignore
 
         # Technician-specific fields
         if user.role == User.Role.TECHNICIAN and tech_profile:
@@ -764,7 +666,35 @@ def edit_profile(request, user_id):
                         is_primary=True,
                     )
 
-        messages.success(request, "Profile updated successfully!")
+        if phone_verification_required:
+            otp = PhoneOTP.generate_otp(user)
+
+            if settings.DEBUG:
+                logger.info(f"[Phone OTP] OTP for {user.phone_number}: {otp.otp}")
+                print(f"\n{'=' * 50}")
+                print(f"  OTP for {user.phone_number}: {otp.otp}")
+                print(f"{'=' * 50}\n")
+            else:
+                transaction.on_commit(
+                    lambda: send_phone_verification_sms.delay(user.id, otp.otp)  # type: ignore
+                )
+
+            messages.success(
+                request,
+                "Phone number updated. Please verify with the OTP sent to your phone.",
+            )
+            return redirect(
+                f"{reverse('a:verify-phone-otp', kwargs={'user_id': user.pk})}?next=profile"
+            )
+
+        if email_verification_required:
+            messages.success(
+                request,
+                "Profile updated. A verification email has been sent to your email address.",
+            )
+        else:
+            messages.success(request, "Profile updated successfully!")
+
         return redirect("a:profile", user_id=user.pk)
 
     return render(
@@ -786,7 +716,7 @@ def delete_account(request, user_id):
     if request.user.pk != user.pk:
         messages.error(request, "You can only delete your own account.")
         return redirect("a:profile", user_id=user.pk)
-    
+
     try:
         if request.method == "POST":
             auth_logout(request)
@@ -795,7 +725,10 @@ def delete_account(request, user_id):
             return redirect("a:login")
     except Exception as e:
         logger.error(f"Error deleting account for user {user.email}: {e}")
-        messages.error(request, "An error occurred while deleting your account. Please try again later.")
+        messages.error(
+            request,
+            "An error occurred while deleting your account. Please try again later.",
+        )
         return redirect("a:profile", user_id=user.pk)
 
     return render(request, "confirm_delete_account.html", {"user": user})
@@ -894,10 +827,23 @@ def verify_phone_otp(request, user_id):
     POST: Validate submitted OTP. On success, activate the user account
     and redirect to login. On failure, show error and allow retry.
     """
-    user = get_object_or_404(User, pk=user_id, signup_method=User.SignupMethod.PHONE)
+    user = get_object_or_404(User, pk=user_id)
+    return_to_profile = (
+        request.GET.get("next") == "profile"
+        and request.user.is_authenticated
+        and request.user.pk == user.pk
+    )
 
     if user.is_active and user.phone_verified:
         messages.info(request, "Phone number is already verified.")
+        if return_to_profile:
+            return redirect("a:profile", user_id=user.pk)
+        return redirect("a:login")
+
+    if not user.phone_number:
+        messages.error(request, "No phone number found for verification.")
+        if return_to_profile:
+            return redirect("a:edit-profile", user_id=user.pk)
         return redirect("a:login")
 
     if request.method == "POST":
@@ -905,7 +851,14 @@ def verify_phone_otp(request, user_id):
 
         if not otp_input:
             messages.error(request, "Please enter the OTP.")
-            return render(request, "verify_phone_otp.html", {"user": user})
+            return render(
+                request,
+                "verify_phone_otp.html",
+                {
+                    "user": user,
+                    "is_profile_verification": return_to_profile,
+                },
+            )
 
         # Find the latest valid OTP for this user
         otp_obj = (
@@ -919,7 +872,14 @@ def verify_phone_otp(request, user_id):
                 request,
                 "Invalid or expired OTP. Please try again or request a new one.",
             )
-            return render(request, "verify_phone_otp.html", {"user": user})
+            return render(
+                request,
+                "verify_phone_otp.html",
+                {
+                    "user": user,
+                    "is_profile_verification": return_to_profile,
+                },
+            )
 
         # OTP is valid — activate account
         otp_obj.is_used = True
@@ -929,12 +889,23 @@ def verify_phone_otp(request, user_id):
         user.phone_verified = True
         user.save()
 
+        if return_to_profile:
+            messages.success(request, "Phone number verified successfully!")
+            return redirect("a:profile", user_id=user.pk)
+
         messages.success(
             request, "Phone number verified successfully! You can now sign in."
         )
         return redirect("a:login")
 
-    return render(request, "verify_phone_otp.html", {"user": user})
+    return render(
+        request,
+        "verify_phone_otp.html",
+        {
+            "user": user,
+            "is_profile_verification": return_to_profile,
+        },
+    )
 
 
 @ratelimit(key="ip", rate="1/m", block=True)
@@ -944,10 +915,23 @@ def resend_phone_otp(request, user_id):
     Generates a fresh OTP (invalidating any previous ones) and redirects
     back to the OTP verification page.
     """
-    user = get_object_or_404(User, pk=user_id, signup_method=User.SignupMethod.PHONE)
+    user = get_object_or_404(User, pk=user_id)
+    return_to_profile = (
+        request.GET.get("next") == "profile"
+        and request.user.is_authenticated
+        and request.user.pk == user.pk
+    )
 
     if user.is_active and user.phone_verified:
         messages.info(request, "Phone number is already verified.")
+        if return_to_profile:
+            return redirect("a:profile", user_id=user.pk)
+        return redirect("a:login")
+
+    if not user.phone_number:
+        messages.error(request, "No phone number found for verification.")
+        if return_to_profile:
+            return redirect("a:edit-profile", user_id=user.pk)
         return redirect("a:login")
 
     otp = PhoneOTP.generate_otp(user)
@@ -963,6 +947,10 @@ def resend_phone_otp(request, user_id):
         )
 
     messages.success(request, "A new OTP has been sent to your phone number.")
+    if return_to_profile:
+        return redirect(
+            f"{reverse('a:verify-phone-otp', kwargs={'user_id': user.pk})}?next=profile"
+        )
     return redirect("a:verify-phone-otp", user_id=user.pk)
 
 

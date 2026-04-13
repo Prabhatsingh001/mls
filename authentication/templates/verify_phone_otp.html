@@ -4,40 +4,53 @@
 
 {% block content %}
 <div class="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-  <div class="w-full max-w-sm sm:max-w-md">
-    <h2 class="text-xl sm:text-2xl font-bold text-center text-gray-800 mb-2">Verify Your Phone Number</h2>
-    <p class="text-center text-sm text-gray-500 mb-6">
-      We've sent a 6-digit OTP to <span class="font-medium text-gray-700">{{ user.phone_number }}</span>. Enter it below to activate your account.
-    </p>
+    <div class="w-full max-w-sm sm:max-w-md">
+        <h2 class="text-xl sm:text-2xl font-bold text-center text-gray-800 mb-2">Verify Your Phone Number</h2>
+        <p class="text-center text-sm text-gray-500 mb-6">
+            We've sent a 6-digit OTP to <span class="font-medium text-gray-700">{{ user.phone_number }}</span>.
+            {% if is_profile_verification %}
+            Enter it below to verify your updated phone number.
+            {% else %}
+            Enter it below to activate your account.
+            {% endif %}
+        </p>
 
-    <form method="post" class="space-y-4">
-      {% csrf_token %}
+        <form method="post" class="space-y-4">
+        {% csrf_token %}
 
-      <div>
-        <label for="otp" class="block text-sm font-medium text-gray-700 mb-1">One-Time Password</label>
-        <input type="text" name="otp" id="otp" required maxlength="6" pattern="\d{6}"
-               inputmode="numeric" autocomplete="one-time-code"
-               class="w-full rounded border border-gray-300 px-3 py-2 sm:py-2.5 text-sm text-center tracking-[0.5em] font-mono focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
-               placeholder="------">
-      </div>
+            <div>
+                <label for="otp" class="block text-sm font-medium text-gray-700 mb-1">One-Time Password</label>
+                <input type="text" name="otp" id="otp" required maxlength="6" pattern="\d{6}"
+                    inputmode="numeric" autocomplete="one-time-code"
+                    class="w-full rounded border border-gray-300 px-3 py-2 sm:py-2.5 text-sm text-center tracking-[0.5em] font-mono focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+                    placeholder="------">
+            </div>
 
-      <button type="submit"
-              class="w-full rounded bg-gray-800 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-700 active:bg-gray-900 transition">
-        Verify &amp; Activate Account
-      </button>
-    </form>
+            <button type="submit"
+                    class="w-full rounded bg-gray-800 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-700 active:bg-gray-900 transition">
+                {% if is_profile_verification %}
+                Verify Phone Number
+                {% else %}
+                Verify &amp; Activate Account
+                {% endif %}
+            </button>
+        </form>
 
-    <div class="mt-5 sm:mt-6 text-center">
-      <p class="text-sm text-gray-500 mb-2">Didn't receive the code?</p>
-      <a href="{% url 'a:resend-phone-otp' user_id=user.pk %}"
-         class="inline-block text-sm text-gray-800 font-medium hover:underline">
-        Resend OTP
-      </a>
+        <div class="mt-5 sm:mt-6 text-center">
+            <p class="text-sm text-gray-500 mb-2">Didn't receive the code?</p>
+            <a href="{% url 'a:resend-phone-otp' user_id=user.pk %}{% if is_profile_verification %}?next=profile{% endif %}"
+                class="inline-block text-sm text-gray-800 font-medium hover:underline">
+                Resend OTP
+            </a>
+        </div>
+
+        <p class="mt-4 text-center text-sm text-gray-500">
+            {% if is_profile_verification %}
+            <a href="{% url 'a:profile' user_id=user.pk %}" class="text-gray-800 font-medium hover:underline">Back to Profile</a>
+            {% else %}
+            <a href="{% url 'a:login' %}" class="text-gray-800 font-medium hover:underline">Back to Sign in</a>
+            {% endif %}
+        </p>
     </div>
-
-    <p class="mt-4 text-center text-sm text-gray-500">
-      <a href="{% url 'a:login' %}" class="text-gray-800 font-medium hover:underline">Back to Sign in</a>
-    </p>
-  </div>
 </div>
 {% endblock %}
